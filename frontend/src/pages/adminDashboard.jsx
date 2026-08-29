@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const adminDashboard = () => {
     return (
@@ -181,26 +182,26 @@ const adminDashboard = () => {
 
                             <div className="mt-4 space-y-3">
 
-                                <a
-                                    href="/dashboard/attendance"
+                                <Link
+                                    to="/dashboard/attendance"
                                     className="block rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
                                 >
                                     Record Attendance
-                                </a>
+                                </Link>
 
-                                <a
-                                    href="/dashboard/students"
+                                <Link
+                                    to="/dashboard/students"
                                     className="block rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                 >
                                     Add Student
-                                </a>
+                                </Link>
 
-                                <a
-                                    href="/dashboard/reports"
+                                <Link
+                                    to="/dashboard/reports"
                                     className="block rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                 >
                                     View Reports
-                                </a>
+                                </Link>
 
                             </div>
                         </div>
