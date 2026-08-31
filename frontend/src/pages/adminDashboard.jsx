@@ -98,7 +98,7 @@ const adminDashboard = () => {
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                                    <thead className="bg-gray-100 text-xs uppercase text-gray-600">
                                         <tr>
                                             <th className="px-6 py-3">Student</th>
                                             <th className="px-6 py-3">Class</th>
@@ -123,7 +123,7 @@ const adminDashboard = () => {
                                             </td>
 
                                             <td className="px-6 py-4">
-                                                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                                                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium hover:text-green-400 text-green-700">
                                                     Present
                                                 </span>
                                             </td>
@@ -143,7 +143,7 @@ const adminDashboard = () => {
                                             </td>
 
                                             <td className="px-6 py-4">
-                                                <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                                                <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium hover:text-red-400 text-red-700">
                                                     Absent
                                                 </span>
                                             </td>
@@ -163,12 +163,11 @@ const adminDashboard = () => {
                                             </td>
 
                                             <td className="px-6 py-4">
-                                                <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+                                                <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700 hover:text-yellow-400">
                                                     Late
                                                 </span>
                                             </td>
                                         </tr>
-
                                     </tbody>
                                 </table>
                             </div>
