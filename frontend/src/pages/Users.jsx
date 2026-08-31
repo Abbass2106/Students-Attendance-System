@@ -1,24 +1,28 @@
+import { useEffect, useState } from "react"
+import api from '../Services/api'
+
 function Users() {
-    const users = [
-        {
-            id: 1,
-            name: 'John Admin',
-            email: 'admin@gmail.com',
-            role: 'ADMIN'
-        },
-        {
-            id: 2,
-            name: 'Jane Teacher',
-            email: 'teacher@gmail.com',
-            role: 'TEACHER'
-        },
-        {
-            id: 3,
-            name: 'Peter Teacher',
-            email: 'peter@gmail.com',
-            role: 'TEACHER'
+    const [users, setUsers] = useState(null)
+    const [error, setError] = useState('')
+
+
+    useEffect(() => {
+
+        const fetchUsers = async () => {
+
+            try {
+                const response = await api.get('/users')
+                setUsers(response.data)
+            }
+
+            catch(error){
+                console.log(error)
+                setError('Unable to load users')
+            }
         }
-    ]
+
+        fetchUsers()
+    },[])
 
     return (
         <div className="p-6">
@@ -45,7 +49,6 @@ function Users() {
 
                         <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>
-                                <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Email</th>
                                 <th className="px-6 py-4">Role</th>
@@ -55,32 +58,27 @@ function Users() {
 
                         <tbody className="divide-y divide-gray-100">
 
-                            {users.map((user) => (
+                            {users?.map((user) => (
                                 <tr
                                     key={user.id}
                                     className="hover:bg-gray-50"
                                 >
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {user.id}
-                                    </td>
-
                                     <td className="px-6 py-4 font-medium text-gray-800">
-                                        {user.name}
+                                        {user?.name}
                                     </td>
 
                                     <td className="px-6 py-4 text-gray-500">
-                                        {user.email}
+                                        {user?.email}
                                     </td>
 
                                     <td className="px-6 py-4">
                                         <span
-                                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                                user.role === 'ADMIN'
-                                                    ? 'bg-purple-100 text-purple-700'
-                                                    : 'bg-blue-100 text-blue-700'
-                                            }`}
+                                            className={`rounded-full px-3 py-1 text-xs font-medium ${user?.role === 'ADMIN'
+                                                ? 'bg-purple-100 text-purple-700'
+                                                : 'bg-blue-100 text-blue-700'
+                                                }`}
                                         >
-                                            {user.role}
+                                            {user?.role}
                                         </span>
                                     </td>
 

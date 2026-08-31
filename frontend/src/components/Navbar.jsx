@@ -1,4 +1,28 @@
+import { useEffect, useState } from "react"
+import api from '../Services/api'
+
 function Navbar() {
+
+    const [user, setUser] = useState(null)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+
+        const fetchUser = async () => {
+
+            try {
+                const response = await api.get('/users/me')
+                setUser(response.data)
+            }
+
+            catch(error){
+                console.log(error)
+                setError('unable to get user information')
+            }
+        }
+
+        fetchUser()
+    })
 
     return (
         <header className="flex h-16 items-center justify-between border-b bg-white px-6">
@@ -15,7 +39,7 @@ function Navbar() {
 
                 {/* Notification */}
                 <button className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
-                    
+
 
                     <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
                 </button>
@@ -29,11 +53,11 @@ function Navbar() {
 
                     <div className="hidden sm:block">
                         <p className="text-sm font-semibold text-gray-800">
-                            Admin
+                            {user?.name}
                         </p>
 
                         <p className="text-xs text-gray-500">
-                            Administrator
+                            {user?.role}
                         </p>
                     </div>
 

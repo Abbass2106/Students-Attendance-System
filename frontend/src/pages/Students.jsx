@@ -1,17 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import api from '../Services/api'
 
 function Students() {
     const [search, setSearch] = useState('')
+    const [students, setStudents] = useState([])
+    const [classes, setClasses] = useState([])
+    const [error, setError] = useState([])
 
-    const students = [
-        { id: 1, name: 'John Smith', email: 'john@gmail.com', className: 'Form 1' },
-        { id: 2, name: 'Jane Doe', email: 'jane@gmail.com', className: 'Form 2' },
-        { id: 3, name: 'Peter Jones', email: 'peter@gmail.com', className: 'Form 1' },
-        { id: 4, name: 'Mary James', email: 'mary@gmail.com', className: 'Form 3' }
-    ]
+    useEffect(() => {
 
-    const filteredStudents = students.filter((student) =>
-        student.name.toLowerCase().includes(search.toLowerCase())
+        const fetchStudents = async () => {
+            try {
+                const response = await api.get('/students')
+                setStudents(response.data)
+            }
+
+            catch (error) {
+                console.log('Unable to fetch students')
+
+                if (error.response) {
+                    setError(error.response.data?.message)
+                }
+            }
+        }
+
+        fetchStudents()
+    }, [])
+
+    const searchStudents = students.filter((student) =>
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(search.toLowerCase())
     )
 
     return (
@@ -48,7 +65,6 @@ function Students() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>
-                                <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Email</th>
                                 <th className="px-6 py-4">Class</th>
@@ -57,22 +73,18 @@ function Students() {
                         </thead>
 
                         <tbody className="divide-y divide-gray-100">
-                            {filteredStudents.map((student) => (
+                            {searchStudents.map((student) => (
                                 <tr key={student.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {student.id}
-                                    </td>
-
                                     <td className="px-6 py-4 font-medium text-gray-800">
-                                        {student.name}
+                                        {student?.firstName}{' '}{student?.lastName}
                                     </td>
 
                                     <td className="px-6 py-4 text-gray-500">
-                                        {student.email}
+                                        {student?.email}
                                     </td>
 
                                     <td className="px-6 py-4 text-gray-500">
-                                        {student.className}
+                                        {student?.classes?.name}
                                     </td>
 
                                     <td className="px-6 py-4">
