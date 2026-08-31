@@ -19,63 +19,67 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
-    private final JwtAccessDeniedHandler accessDeniedHandler;
+        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+        private final JwtAccessDeniedHandler accessDeniedHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-            JwtAuthenticationEntryPoint authenticationEntryPoint,
-            JwtAccessDeniedHandler accessDeniedHandler) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.authenticationEntryPoint = authenticationEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
-    }
+        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                        JwtAuthenticationEntryPoint authenticationEntryPoint,
+                        JwtAccessDeniedHandler accessDeniedHandler) {
+                this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+                this.authenticationEntryPoint = authenticationEntryPoint;
+                this.accessDeniedHandler = accessDeniedHandler;
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http)
+                        throws Exception {
 
-        http
-                .csrf(csrf -> csrf.disable())
+                http
+                                .csrf(csrf -> csrf.disable())
 
-                .sessionManagement(session -> session.sessionCreationPolicy(
-                        SessionCreationPolicy.STATELESS))
+                                .cors(cors -> {
+                                })
 
-                .authorizeHttpRequests(auth -> auth
+                                .sessionManagement(session -> session.sessionCreationPolicy(
+                                                SessionCreationPolicy.STATELESS))
 
-                        // Login is public
-                        .requestMatchers("/api/users/login")
-                        .permitAll()
+                                .exceptionHandling(exception -> exception
+                                                .authenticationEntryPoint(authenticationEntryPoint)
+                                                .accessDeniedHandler(accessDeniedHandler))
 
-                        // ADMIN only
-                        .requestMatchers("/api/users/**")
-                        .hasRole("ADMIN")
+                                .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/api/classes/**")
-                        .hasRole("ADMIN")
+                                                .requestMatchers("/api/users/login")
+                                                .permitAll()
 
-                        // ADMIN + TEACHER
-                        .requestMatchers("/api/students/**")
-                        .hasAnyRole("ADMIN", "TEACHER")
+                                                .requestMatchers("/api/users/me")
+                                                .authenticated()
 
-                        .requestMatchers("/api/attendance/**")
-                        .hasAnyRole("ADMIN", "TEACHER")
+                                                .requestMatchers("/api/users/**")
+                                                .hasRole("ADMIN")
 
-                        .anyRequest().authenticated())
+                                                .requestMatchers("/api/classes/**")
+                                                .hasRole("ADMIN")
 
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class)
+                                                .requestMatchers("/api/students/**")
+                                                .hasAnyRole("ADMIN", "TEACHER")
 
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler));
+                                                .requestMatchers("/api/attendance/**")
+                                                .hasAnyRole("ADMIN", "TEACHER")
 
-        return http.build();
-    }
+                                                .anyRequest()
+                                                .authenticated())
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+                                .addFilterBefore(
+                                                jwtAuthenticationFilter,
+                                                UsernamePasswordAuthenticationFilter.class);
+
+                return http.build();
+        }
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }

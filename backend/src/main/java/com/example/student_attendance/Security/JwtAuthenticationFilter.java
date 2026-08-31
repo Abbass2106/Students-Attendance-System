@@ -4,6 +4,7 @@ import com.example.student_attendance.services.JwtService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,20 +30,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        // No Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies != null) {
+
+            for (Cookie cookie : cookies) {
+
+                if ("accessToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // No JWT cookie
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Remove "Bearer "
-        String token = authHeader.substring(7);
-
-        // Check token
+        // Invalid or expired token
         if (!jwtService.isTokenValid(token)) {
             filterChain.doFilter(request, response);
             return;
@@ -51,14 +63,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String email = jwtService.extractEmail(token);
         String role = jwtService.extractRole(token);
 
-        // Create authenticated user
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 email,
                 null,
-                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                List.of(
+                        new SimpleGrantedAuthority(
+                                "ROLE_" + role)));
 
-        // Tell Spring Security who the user is
-        SecurityContextHolder.getContext()
+        SecurityContextHolder
+                .getContext()
                 .setAuthentication(authentication);
 
         filterChain.doFilter(request, response);

@@ -1,6 +1,5 @@
 package com.example.student_attendance.services;
 
-import com.example.student_attendance.models.LoginResponse;
 import com.example.student_attendance.models.Role;
 import com.example.student_attendance.models.User;
 import com.example.student_attendance.repositories.UserRepository;
@@ -44,10 +43,9 @@ class UserServiceTest {
         when(passwordEncoder.matches("rawPassword", "encodedPassword")).thenReturn(true);
         when(jwtService.generateToken("admin@test.com", "ADMIN")).thenReturn("jwt-token");
 
-        LoginResponse response = userService.login("admin@test.com", "rawPassword");
+        String response = userService.login("admin@test.com", "rawPassword");
 
-        assertEquals("jwt-token", response.getToken());
-        assertEquals(Role.ADMIN, response.getRole());
+        assertEquals("jwt-token", response);
         verify(jwtService).generateToken(eq("admin@test.com"), eq("ADMIN"));
     }
 }
