@@ -1,19 +1,54 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import api from '../Services/api'
 
 function Attendance() {
-    const [className, setClassName] = useState('Form 1')
-    const [date, setDate] = useState('2026-08-30')
+    const [classId, setClassId] = useState('')
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
 
-    const [students, setStudents] = useState([
-        { id: 1, name: 'John Smith', status: 'PRESENT' },
-        { id: 2, name: 'Jane Doe', status: 'PRESENT' },
-        { id: 3, name: 'Peter Jones', status: 'PRESENT' },
-        { id: 4, name: 'Mary James', status: 'PRESENT' }
-    ])
+    const [error, setError] = useState('')
+    const [students, setStudents] = useState([])
+    const [classes, setClasses] = useState([])
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const response = await api.get('/students')
+
+                const studentsWithStatus = response.data.map((student) => ({
+                    ...student,
+                    status: 'PRESENT'
+                }))
+
+                setStudents(studentsWithStatus)
+            }
+            catch (error) {
+                console.error(error)
+                setError('Unable to load students')
+            }
+        }
+
+        const fetchClasses = async () => {
+            try {
+                const response = await api.get('/classes')
+                setClasses(response.data)
+
+                if (response.data.length > 0) {
+                    setClassId(String(response.data[0].id))
+                }
+            }
+            catch (error) {
+                console.error(error)
+                setError('Unable to load classes')
+            }
+        }
+
+        fetchStudents()
+        fetchClasses()
+    }, [])
 
     const handleStatusChange = (id, status) => {
-        setStudents(
-            students.map((student) =>
+        setStudents((prevStudents) =>
+            prevStudents.map((student) =>
                 student.id === id
                     ? { ...student, status }
                     : student
@@ -21,15 +56,54 @@ function Attendance() {
         )
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
-        console.log({
-            className,
-            date,
-            students
-        })
+        setError('')
+
+        try {
+            const selectedStudents = students.filter(
+                (student) =>
+                    String(student?.classes?.id) === classId
+            )
+
+            if (selectedStudents.length === 0) {
+                setError('No students found in this class')
+                return
+            }
+
+            for (const student of selectedStudents) {
+                await api.post('/attendance', {
+                    date: date,
+                    status: student.status,
+                    students: {
+                        id: student.id
+                    }
+                })
+            }
+
+            alert('Attendance saved successfully')
+        }
+        catch (error) {
+            console.error(error)
+
+            if (error.response) {
+                setError(
+                    error.response.data?.message ||
+                    'Unable to save attendance'
+                )
+            }
+            else {
+                setError('Unable to connect to the server')
+            }
+        }
+
     }
+
+    const filteredStudents = students.filter(
+        (student) =>
+            String(student?.classes?.id) === classId
+    )
 
     return (
         <div className="p-6">
@@ -43,6 +117,12 @@ function Attendance() {
                     Record and manage student attendance.
                 </p>
             </div>
+
+            {error && (
+                <div className="mb-5 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+                    {error}
+                </div>
+            )}
 
             <div className="rounded-xl bg-white shadow-sm">
 
@@ -62,14 +142,18 @@ function Attendance() {
                             </label>
 
                             <select
-                                value={className}
-                                onChange={(e) => setClassName(e.target.value)}
+                                value={classId}
+                                onChange={(e) => setClassId(e.target.value)}
                                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                             >
-                                <option>Form 1</option>
-                                <option>Form 2</option>
-                                <option>Form 3</option>
-                                <option>Form 4</option>
+                                {classes.map((schoolClass) => (
+                                    <option
+                                        key={schoolClass.id}
+                                        value={schoolClass.id}
+                                    >
+                                        {schoolClass.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -89,22 +173,34 @@ function Attendance() {
                     </div>
 
                     <div className="overflow-x-auto">
+
                         <table className="w-full text-left text-sm">
+
                             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                                 <tr>
-                                    <th className="px-6 py-4">Student</th>
-                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">
+                                        Student
+                                    </th>
+
+                                    <th className="px-6 py-4">
+                                        Status
+                                    </th>
                                 </tr>
                             </thead>
 
                             <tbody className="divide-y divide-gray-100">
-                                {students.map((student) => (
+
+                                {filteredStudents.map((student) => (
+
                                     <tr key={student.id}>
+
                                         <td className="px-6 py-4 font-medium text-gray-800">
-                                            {student.name}
+                                            {student?.firstName}{' '}
+                                            {student?.lastName}
                                         </td>
 
                                         <td className="px-6 py-4">
+
                                             <select
                                                 value={student.status}
                                                 onChange={(e) =>
@@ -130,24 +226,46 @@ function Attendance() {
                                                 <option value="EXCUSED">
                                                     Excused
                                                 </option>
+
                                             </select>
+
+                                        </td>
+
+                                    </tr>
+
+                                ))}
+
+                                {filteredStudents.length === 0 && (
+
+                                    <tr>
+                                        <td
+                                            colSpan="2"
+                                            className="px-6 py-8 text-center text-gray-500"
+                                        >
+                                            No students found in this class.
                                         </td>
                                     </tr>
-                                ))}
+
+                                )}
+
                             </tbody>
+
                         </table>
+
                     </div>
 
                     <div className="flex justify-end p-6">
+
                         <button
                             type="submit"
-                            className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
-                        >
-                            Save Attendance
+                            className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >Save Attendance
                         </button>
+
                     </div>
 
                 </form>
+
             </div>
 
         </div>
@@ -155,4 +273,3 @@ function Attendance() {
 }
 
 export default Attendance
-
