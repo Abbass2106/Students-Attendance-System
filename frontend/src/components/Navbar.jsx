@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Search, Bell } from "lucide-react"
 import api from '../Services/api'
 
 function Navbar() {
@@ -15,49 +16,57 @@ function Navbar() {
                 setUser(response.data)
             }
 
-            catch(error){
+            catch (error) {
                 console.log(error)
                 setError('unable to get user information')
             }
         }
 
         fetchUser()
-    })
+    }, [])
+
+    if (error) {
+        console.log(error)
+    }
+
+    const initial = user?.name ? user.name.charAt(0).toUpperCase() : 'A'
 
     return (
-        <header className="flex h-16 items-center justify-between border-b bg-white px-6">
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white/80 px-6 backdrop-blur-sm">
 
-            {/* Page title */}
-            <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                    Student Attendance System
-                </h2>
+            {/* Search */}
+            <div className="hidden max-w-sm flex-1 items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-500 sm:flex">
+                <Search size={16} className="text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Search students, classes..."
+                    className="w-full bg-transparent outline-none placeholder:text-gray-400"
+                />
             </div>
 
             {/* Right side */}
-            <div className="flex items-center gap-4">
+            <div className="ml-auto flex items-center gap-4">
 
                 {/* Notification */}
-                <button className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
-
-
-                    <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
+                <button className="relative rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700">
+                    <Bell size={19} />
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
                 </button>
 
                 {/* User */}
-                <div className="flex items-center gap-3 border-l pl-4">
+                <div className="flex items-center gap-3 border-l border-gray-200 pl-4">
 
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-600">
-                        A
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-green-900 font-semibold text-white shadow-sm">
+                        {initial}
                     </div>
 
                     <div className="hidden sm:block">
-                        <p className="text-sm font-semibold text-gray-800">
-                            {user?.name}
+                        <p className="text-sm font-semibold leading-tight text-gray-800">
+                            {user?.name || 'Loading...'}
                         </p>
 
-                        <p className="text-xs text-gray-500">
-                            {user?.role}
+                        <p className="text-xs capitalize leading-tight text-gray-500">
+                            {user?.role?.toLowerCase() || ''}
                         </p>
                     </div>
 

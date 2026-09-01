@@ -138,7 +138,7 @@ function Classes() {
 
                 <button
                     onClick={handleAdd}
-                    className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                    className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
                 >
                     + Add Class
                 </button>
@@ -170,12 +170,12 @@ function Classes() {
                             value={className}
                             onChange={(e) => setClassName(e.target.value)}
                             placeholder="Enter class name"
-                            className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         />
 
                         <button
                             type="submit"
-                            className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                            className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
                         >
                             {editingId ? 'Update Class' : 'Save Class'}
                         </button>
@@ -205,7 +205,7 @@ function Classes() {
 
                         <div className="flex items-center justify-between">
 
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 font-bold text-blue-600">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-100 font-bold text-emerald-600">
                                 {schoolClass.name?.charAt(0)?.toUpperCase()}
                             </div>
 

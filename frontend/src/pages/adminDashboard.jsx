@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Users, School, CheckCircle2, XCircle, ClipboardPlus, UserPlus, FileBarChart } from 'lucide-react'
 import api from '../Services/api'
 
 const AdminDashboard = () => {
@@ -118,6 +119,41 @@ const AdminDashboard = () => {
     }
 
 
+    const statCards = [
+        {
+            label: 'Total Students',
+            value: students.length,
+            sub: 'Registered students',
+            subColor: 'text-gray-500',
+            icon: Users,
+            iconBg: 'bg-emerald-50 text-emerald-600',
+        },
+        {
+            label: 'Total Classes',
+            value: classes.length,
+            sub: 'Active classes',
+            subColor: 'text-gray-500',
+            icon: School,
+            iconBg: 'bg-green-50 text-green-700',
+        },
+        {
+            label: "Today's Attendance",
+            value: `${attendancePercentage}%`,
+            sub: `${presentCount} present`,
+            subColor: 'text-green-600',
+            icon: CheckCircle2,
+            iconBg: 'bg-green-50 text-green-600',
+        },
+        {
+            label: 'Absent Today',
+            value: absentCount,
+            sub: `${lateCount} late`,
+            subColor: 'text-red-600',
+            icon: XCircle,
+            iconBg: 'bg-red-50 text-red-600',
+        },
+    ]
+
     return (
         <div className="p-6">
 
@@ -125,7 +161,7 @@ const AdminDashboard = () => {
             <div className="mb-6">
 
                 <h1 className="text-2xl font-bold text-gray-800">
-                    Welcome back, {user?.name}
+                    Welcome back, {user?.name || 'Admin'}
                 </h1>
 
                 <p className="mt-1 text-gray-500">
@@ -138,76 +174,32 @@ const AdminDashboard = () => {
             {/* Statistics */}
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
-                {/* Total Students */}
-                <div className="rounded-xl bg-white p-5 shadow-sm">
+                {statCards.map((card) => {
+                    const Icon = card.icon
+                    return (
+                        <div
+                            key={card.label}
+                            className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md"
+                        >
+                            <div className="flex items-start justify-between">
+                                <p className="text-sm font-medium text-gray-500">
+                                    {card.label}
+                                </p>
+                                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${card.iconBg}`}>
+                                    <Icon size={18} />
+                                </div>
+                            </div>
 
-                    <p className="text-sm font-medium text-gray-500">
-                        Total Students
-                    </p>
+                            <p className="mt-3 text-3xl font-bold text-gray-800">
+                                {card.value}
+                            </p>
 
-                    <p className="mt-2 text-3xl font-bold text-gray-800">
-                        {students.length}
-                    </p>
-
-                    <p className="mt-2 text-sm text-gray-500">
-                        Registered students
-                    </p>
-
-                </div>
-
-
-                {/* Total Classes */}
-                <div className="rounded-xl bg-white p-5 shadow-sm">
-
-                    <p className="text-sm font-medium text-gray-500">
-                        Total Classes
-                    </p>
-
-                    <p className="mt-2 text-3xl font-bold text-gray-800">
-                        {classes.length}
-                    </p>
-
-                    <p className="mt-2 text-sm text-gray-500">
-                        Active classes
-                    </p>
-
-                </div>
-
-
-                {/* Today's Attendance */}
-                <div className="rounded-xl bg-white p-5 shadow-sm">
-
-                    <p className="text-sm font-medium text-gray-500">
-                        Today's Attendance
-                    </p>
-
-                    <p className="mt-2 text-3xl font-bold text-gray-800">
-                        {attendancePercentage}%
-                    </p>
-
-                    <p className="mt-2 text-sm text-green-600">
-                        {presentCount} present
-                    </p>
-
-                </div>
-
-
-                {/* Absent Today */}
-                <div className="rounded-xl bg-white p-5 shadow-sm">
-
-                    <p className="text-sm font-medium text-gray-500">
-                        Absent Today
-                    </p>
-
-                    <p className="mt-2 text-3xl font-bold text-gray-800">
-                        {absentCount}
-                    </p>
-
-                    <p className="mt-2 text-sm text-red-600">
-                        {lateCount} late
-                    </p>
-
-                </div>
+                            <p className={`mt-2 text-sm ${card.subColor}`}>
+                                {card.sub}
+                            </p>
+                        </div>
+                    )
+                })}
 
             </div>
 
@@ -217,9 +209,9 @@ const AdminDashboard = () => {
 
 
                 {/* Recent Attendance */}
-                <div className="rounded-xl bg-white shadow-sm lg:col-span-2">
+                <div className="rounded-xl border border-gray-100 bg-white shadow-sm lg:col-span-2">
 
-                    <div className="flex items-center justify-between border-b px-6 py-4">
+                    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
 
                         <h2 className="font-semibold text-gray-800">
                             Recent Attendance
@@ -227,7 +219,7 @@ const AdminDashboard = () => {
 
                         <Link
                             to="/dashboard/attendance"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                            className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
                         >
                             View all
                         </Link>
@@ -239,7 +231,7 @@ const AdminDashboard = () => {
 
                         <table className="w-full text-left text-sm">
 
-                            <thead className="bg-gray-100 text-xs uppercase text-gray-600">
+                            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
 
                                 <tr>
 
@@ -327,7 +319,7 @@ const AdminDashboard = () => {
 
 
                 {/* Quick Actions */}
-                <div className="rounded-xl bg-white p-6 shadow-sm">
+                <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
 
                     <h2 className="font-semibold text-gray-800">
                         Quick Actions
@@ -337,22 +329,25 @@ const AdminDashboard = () => {
 
                         <Link
                             to="/dashboard/attendance"
-                            className="block rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
+                            className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:from-emerald-700 hover:to-green-950"
                         >
+                            <ClipboardPlus size={16} />
                             Record Attendance
                         </Link>
 
                         <Link
                             to="/dashboard/students"
-                            className="block rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                         >
+                            <UserPlus size={16} />
                             Add Student
                         </Link>
 
                         <Link
                             to="/dashboard/reports"
-                            className="block rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                         >
+                            <FileBarChart size={16} />
                             View Reports
                         </Link>
 

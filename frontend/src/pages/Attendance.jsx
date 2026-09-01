@@ -142,7 +142,7 @@ function Attendance() {
                             <select
                                 value={classId}
                                 onChange={(e) => setClassId(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                             >
                                 {classes.map((schoolClass) => (
                                     <option
@@ -164,7 +164,7 @@ function Attendance() {
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                             />
                         </div>
 
@@ -207,7 +207,7 @@ function Attendance() {
                                                         e.target.value
                                                     )
                                                 }
-                                                className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+                                                className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-emerald-500"
                                             >
                                                 <option value="PRESENT">
                                                     Present
@@ -256,7 +256,7 @@ function Attendance() {
 
                         <button
                             type="submit"
-                            className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >Save Attendance
                         </button>
 

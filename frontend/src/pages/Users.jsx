@@ -38,7 +38,7 @@ function Users() {
                     </p>
                 </div>
 
-                <button className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                <button className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
                     + Add User
                 </button>
             </div>
@@ -75,7 +75,7 @@ function Users() {
                                         <span
                                             className={`rounded-full px-3 py-1 text-xs font-medium ${user?.role === 'ADMIN'
                                                 ? 'bg-purple-100 text-purple-700'
-                                                : 'bg-blue-100 text-blue-700'
+                                                : 'bg-emerald-100 text-emerald-700'
                                                 }`}
                                         >
                                             {user?.role}

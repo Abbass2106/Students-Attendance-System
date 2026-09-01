@@ -144,7 +144,7 @@ function Reports() {
                 <button
                     onClick={() => setReportType('student')}
                     className={`flex-1 rounded-lg px-4 py-3 text-sm font-semibold ${reportType === 'student'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-emerald-600 text-white'
                         : 'text-gray-600 hover:bg-gray-100'
                         }`}
                 >
@@ -154,7 +154,7 @@ function Reports() {
                 <button
                     onClick={() => setReportType('class')}
                     className={`flex-1 rounded-lg px-4 py-3 text-sm font-semibold ${reportType === 'class'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-emerald-600 text-white'
                         : 'text-gray-600 hover:bg-gray-100'
                         }`}
                 >
@@ -182,7 +182,7 @@ function Reports() {
                                 onChange={(e) =>
                                     setSelectedStudent(e.target.value)
                                 }
-                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 sm:max-w-md"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-500 sm:max-w-md"
                             >
                                 <option value="">
                                     Select a student
@@ -249,12 +249,12 @@ function Reports() {
                                         </p>
                                     </div>
 
-                                    <div className="rounded-lg bg-blue-50 p-5">
-                                        <p className="text-sm text-blue-600">
+                                    <div className="rounded-lg bg-emerald-50 p-5">
+                                        <p className="text-sm text-emerald-600">
                                             Attendance
                                         </p>
 
-                                        <p className="mt-2 text-2xl font-bold text-blue-700">
+                                        <p className="mt-2 text-2xl font-bold text-emerald-700">
                                             {Math.round(
                                                 studentReport.attendancePercentage
                                             )}%
@@ -298,7 +298,7 @@ function Reports() {
                                 onChange={(e) =>
                                     setSelectedClass(e.target.value)
                                 }
-                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 sm:max-w-md"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-emerald-500 sm:max-w-md"
                             >
                                 <option value="">
                                     Select a class
@@ -363,12 +363,12 @@ function Reports() {
                                         </p>
                                     </div>
 
-                                    <div className="rounded-lg bg-blue-50 p-5">
-                                        <p className="text-sm text-blue-600">
+                                    <div className="rounded-lg bg-emerald-50 p-5">
+                                        <p className="text-sm text-emerald-600">
                                             Attendance
                                         </p>
 
-                                        <p className="mt-2 text-2xl font-bold text-blue-700">
+                                        <p className="mt-2 text-2xl font-bold text-emerald-700">
                                             {Math.round(
                                                 classReport.attendancePercentage
                                             )}%
