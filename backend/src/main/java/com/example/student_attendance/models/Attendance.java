@@ -26,6 +26,10 @@ public class Attendance {
     @JoinColumn(name = "student_id")
     private Students students;
 
+    @ManyToOne
+    @JoinColumn(name = "class_id")
+    private Classes classes;
+
 
     public Attendance() {
     }
@@ -67,6 +71,14 @@ public class Attendance {
 
     public void setStudents(Students students){
         this.students=students;
+    }
+
+    public Classes getClasses() {
+        return classes;
+    }
+
+    public void setClasses(Classes classes) {
+        this.classes = classes;
     }
     
 }

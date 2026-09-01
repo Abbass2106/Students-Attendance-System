@@ -4,8 +4,10 @@ import com.example.student_attendance.models.Attendance;
 import com.example.student_attendance.models.AttendanceStatus;
 import com.example.student_attendance.models.AttendanceSummary;
 import com.example.student_attendance.models.ClassAttendanceSummary;
+import com.example.student_attendance.models.Classes;
 import com.example.student_attendance.models.Students;
 import com.example.student_attendance.repositories.AttendanceRepository;
+import com.example.student_attendance.repositories.ClassRepository;
 import com.example.student_attendance.repositories.StudentRepository;
 
 import java.time.LocalDate;
@@ -19,10 +21,13 @@ public class AttendanceService {
 
     private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
+    private final ClassRepository classRepository;
 
-    public AttendanceService(AttendanceRepository attendanceRepository, StudentRepository studentRepository) {
+    public AttendanceService(AttendanceRepository attendanceRepository, StudentRepository studentRepository,
+            ClassRepository classRepository) {
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
+        this.classRepository = classRepository;
     }
 
     // create attendance
@@ -34,12 +39,22 @@ public class AttendanceService {
             throw new ApiException("Student not found", 404);
         }
 
-        boolean existingStudent = attendanceRepository.existsByStudentsIdAndDate(studentId, attendance.getDate());
+        Long classId = attendance.getClasses() != null ? attendance.getClasses().getId()
+                : students.getClasses() != null ? students.getClasses().getId() : null;
+        Classes classes = classId == null ? null : classRepository.findById(classId).orElse(null);
+
+        if (classes == null) {
+            throw new ApiException("Class not found", 404);
+        }
+
+        boolean existingStudent = attendanceRepository.existsByStudentsIdAndDateAndClassesId(
+                studentId, attendance.getDate(), classId);
         if (existingStudent) {
             throw new ApiException("Student already signed in", 409);
         }
 
         attendance.setStudents(students);
+        attendance.setClasses(classes);
         return attendanceRepository.save(attendance);
     }
 
@@ -71,7 +86,7 @@ public class AttendanceService {
 
     // get students attendance by class and date
     public List<Attendance> getAttendanceByClassAndDate(Long classId, LocalDate date) {
-        return attendanceRepository.findByStudentsClassesIdAndDate(classId, date);
+        return attendanceRepository.findByClassesIdAndDate(classId, date);
     }
 
     // update attendance
@@ -143,21 +158,21 @@ public class AttendanceService {
     public ClassAttendanceSummary getClassAttendanceSummary(Long classId) {
 
         // count all attendance records for this class
-        long totalRecords = attendanceRepository.countByStudentsClassesId(classId);
+        long totalRecords = attendanceRepository.countByClassesId(classId);
 
-        long present = attendanceRepository.countByStudentsClassesIdAndStatus(
+        long present = attendanceRepository.countByClassesIdAndStatus(
                 classId,
                 AttendanceStatus.PRESENT);
 
-        long absent = attendanceRepository.countByStudentsClassesIdAndStatus(
+        long absent = attendanceRepository.countByClassesIdAndStatus(
                 classId,
                 AttendanceStatus.ABSENT);
 
-        long late = attendanceRepository.countByStudentsClassesIdAndStatus(
+        long late = attendanceRepository.countByClassesIdAndStatus(
                 classId,
                 AttendanceStatus.LATE);
 
-        long excused = attendanceRepository.countByStudentsClassesIdAndStatus(
+        long excused = attendanceRepository.countByClassesIdAndStatus(
                 classId,
                 AttendanceStatus.EXCUSED);
 
