@@ -99,9 +99,18 @@ const AdminDashboard = () => {
 
 
     const attendancePercentage =
-        students.length > 0
-            ? Math.round((presentCount / students.length) * 100)
+        todayAttendance.length > 0
+            ? Math.round((presentCount / todayAttendance.length) * 100)
             : 0
+
+    const recentAttendance = [...attendance]
+        .sort((first, second) => {
+            const dateDifference =
+                new Date(second.date) - new Date(first.date)
+
+            return dateDifference || Number(second.id) - Number(first.id)
+        })
+        .slice(0, 5)
 
 
     if (error) {
@@ -257,7 +266,7 @@ const AdminDashboard = () => {
 
                             <tbody className="divide-y divide-gray-100">
 
-                                {attendance.map((item) => (
+                                {recentAttendance.map((item) => (
 
                                     <tr key={item.id}>
 
@@ -267,7 +276,7 @@ const AdminDashboard = () => {
                                         </td>
 
                                         <td className="px-6 py-4 text-gray-500">
-                                            {item?.students?.classes?.name || 'N/A'}
+                                            {item?.classes?.name || 'N/A'}
                                         </td>
 
                                         <td className="px-6 py-4 text-gray-500">
@@ -293,7 +302,7 @@ const AdminDashboard = () => {
 
                                 ))}
 
-                                {students.length === 0 && (
+                                {attendance.length === 0 && (
 
                                     <tr>
 

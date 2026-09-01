@@ -62,22 +62,25 @@ function Attendance() {
         setError('')
 
         try {
-            const selectedStudents = students.filter(
-                (student) =>
-                    String(student?.classes?.id) === classId
-            )
-
-            if (selectedStudents.length === 0) {
-                setError('No students found in this class')
+            if (students.length === 0) {
+                setError('No students found')
                 return
             }
 
-            for (const student of selectedStudents) {
+            if (!classId) {
+                setError('Please select a class')
+                return
+            }
+
+            for (const student of students) {
                 await api.post('/attendance', {
                     date: date,
                     status: student.status,
                     students: {
                         id: student.id
+                    },
+                    classes: {
+                        id: Number(classId)
                     }
                 })
             }
@@ -99,11 +102,6 @@ function Attendance() {
         }
 
     }
-
-    const filteredStudents = students.filter(
-        (student) =>
-            String(student?.classes?.id) === classId
-    )
 
     return (
         <div className="p-6">
@@ -190,7 +188,7 @@ function Attendance() {
 
                             <tbody className="divide-y divide-gray-100">
 
-                                {filteredStudents.map((student) => (
+                                {students.map((student) => (
 
                                     <tr key={student.id}>
 
@@ -235,14 +233,14 @@ function Attendance() {
 
                                 ))}
 
-                                {filteredStudents.length === 0 && (
+                                {students.length === 0 && (
 
                                     <tr>
                                         <td
                                             colSpan="2"
                                             className="px-6 py-8 text-center text-gray-500"
                                         >
-                                            No students found in this class.
+                                            No students found.
                                         </td>
                                     </tr>
 

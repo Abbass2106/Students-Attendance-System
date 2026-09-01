@@ -4,7 +4,6 @@ import api from '../Services/api'
 function Students() {
     const [search, setSearch] = useState('')
     const [students, setStudents] = useState([])
-    const [classes, setClasses] = useState([])
     const [error, setError] = useState([])
 
     useEffect(() => {
@@ -67,7 +66,6 @@ function Students() {
                             <tr>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4">Class</th>
                                 <th className="px-6 py-4">Actions</th>
                             </tr>
                         </thead>
@@ -81,10 +79,6 @@ function Students() {
 
                                     <td className="px-6 py-4 text-gray-500">
                                         {student?.email}
-                                    </td>
-
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {student?.classes?.name}
                                     </td>
 
                                     <td className="px-6 py-4">
