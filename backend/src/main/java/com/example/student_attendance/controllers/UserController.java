@@ -75,7 +75,7 @@ public class UserController {
                 .from("accessToken", token)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax")
+                .sameSite("None")
                 .path("/")
                 .maxAge(60 * 60)
                 .build();
