@@ -74,7 +74,7 @@ public class UserController {
         ResponseCookie cookie = ResponseCookie
                 .from("accessToken", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(60 * 60)
