@@ -1,57 +1,47 @@
 package com.example.student_attendance.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "Attendance")
+@Table(
+    name = "Attendance",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_session_enrollment",
+            columnNames = {"session_id", "enrollment_id"}
+        )
+    }
+)
 public class Attendance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "session_id")
+    @Column(name = "session_id", nullable = false)
     private Long sessionId;
 
-    @Column(name = "enrollment_id")
+    @Column(name = "enrollment_id", nullable = false)
     private Long enrollmentId;
 
-    @NotNull
-    private LocalDate date;
-
     @Enumerated(EnumType.STRING)
-    AttendanceStatus status;
+    @Column(nullable = false)
+    private AttendanceStatus status;
 
-    @Column(name = "marked_at")
+    @Column(name = "marked_at", nullable = false)
     private LocalDateTime markedAt;
 
     @Column(name = "marked_by")
     private Long markedBy;
 
-    @ManyToOne
-    @JoinColumn(name = "student_id")
-    private Students students;
-
-    @ManyToOne
-    @JoinColumn(name = "class_id")
-    private Classes classes;
-
-
     public Attendance() {
     }
-
 
     public Long getId() {
         return id;
     }
-
 
     public void setId(Long id) {
         this.id = id;
@@ -73,21 +63,9 @@ public class Attendance {
         this.enrollmentId = enrollmentId;
     }
 
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-
     public AttendanceStatus getStatus() {
         return status;
     }
-
 
     public void setStatus(AttendanceStatus status) {
         this.status = status;
@@ -109,28 +87,10 @@ public class Attendance {
         this.markedBy = markedBy;
     }
 
-
-    public Students getStudents(){
-        return students;
-    }
-
-    public void setStudents(Students students){
-        this.students=students;
-    }
-
-    public Classes getClasses() {
-        return classes;
-    }
-
-    public void setClasses(Classes classes) {
-        this.classes = classes;
-    }
-
     @PrePersist
     protected void onCreate() {
         if (markedAt == null) {
             markedAt = LocalDateTime.now();
         }
     }
-    
 }

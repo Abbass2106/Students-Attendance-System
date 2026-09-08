@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -47,7 +48,18 @@ public class GlobalExceptionHandler {
                 return ResponseEntity
                                 .status(HttpStatus.BAD_REQUEST)
                                 .body(Map.of(
-                                                "status",
-                                                "Invalid attendance status. Use PRESENT, ABSENT, LATE, or EXCUSED."));
+                                                "message",
+                                                "Malformed request body"));
+        }
+
+        @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<Map<String, String>> handleParameterTypeMismatch(
+                        MethodArgumentTypeMismatchException exception) {
+
+                String message = "Invalid value for parameter: " + exception.getName();
+
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(Map.of("message", message));
         }
 }

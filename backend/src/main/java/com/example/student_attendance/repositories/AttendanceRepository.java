@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+public interface AttendanceRepository
+        extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findBySessionId(Long sessionId);
 
@@ -23,32 +24,12 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             Long enrollmentId
     );
 
-    List<Attendance> findByStudentsId(Long studentId);
-
-    List<Attendance> findByDate(java.time.LocalDate date);
-
-    List<Attendance> findByClassesIdAndDate(Long classId, java.time.LocalDate date);
-
-    boolean existsByStudentsIdAndDateAndClassesId(
-            Long studentId,
-            java.time.LocalDate date,
-            Long classId
-    );
-
-    long countByStudentsId(Long studentId);
-
-    long countByStudentsIdAndStatus(Long studentId, AttendanceStatus status);
-
-    long countByClassesId(Long classId);
-
-    long countByClassesIdAndStatus(Long classId, AttendanceStatus status);
+    long countByEnrollmentId(Long enrollmentId);
 
     long countByEnrollmentIdAndStatus(
             Long enrollmentId,
             AttendanceStatus status
     );
-
-    long countByEnrollmentId(Long enrollmentId);
 
     long countBySessionIdAndStatus(
             Long sessionId,

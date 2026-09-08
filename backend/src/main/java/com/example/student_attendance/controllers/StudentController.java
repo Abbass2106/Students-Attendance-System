@@ -5,6 +5,7 @@ import com.example.student_attendance.services.StudentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class StudentController {
 
     @PostMapping
     public ResponseEntity<Students> createStudent(
-            @RequestBody Students student
+            @Valid @RequestBody Students student
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)

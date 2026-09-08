@@ -1,111 +1,76 @@
 package com.example.student_attendance.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "Courses")
+@Table(
+    name = "Courses",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_course_code", columnNames = "code")
+    }
+)
 public class Courses {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	private String code;
+    @NotBlank
+    @Column(nullable = false, unique = true)
+    private String code;
 
-	@Column(name = "course_id")
-	private Long courseId;
+    @NotBlank
+    @Column(nullable = false)
+    private String name;
 
-	private Integer semester;
+    @NotNull
+    private Integer credits;
 
-	@Column(name = "academic_year")
-	private String academicYear;
+    @Column(name = "department_id")
+    private Long departmentId;
 
-	@Column(name = "lecturer_id")
-	private Long lecturerId;
+    public Courses() {
+    }
 
-	private String room;
+    public Long getId() {
+        return id;
+    }
 
-	private Integer capacity;
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	private String status;
+    public String getCode() {
+        return code;
+    }
 
-	public Courses() {
-	}
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-	public Long getId() {
-		return id;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getCode() {
-		return code;
-	}
+    public Integer getCredits() {
+        return credits;
+    }
 
-	public void setCode(String code) {
-		this.code = code;
-	}
+    public void setCredits(Integer credits) {
+        this.credits = credits;
+    }
 
-	public Long getCourseId() {
-		return courseId;
-	}
+    public Long getDepartmentId() {
+        return departmentId;
+    }
 
-	public void setCourseId(Long courseId) {
-		this.courseId = courseId;
-	}
-
-	public Integer getSemester() {
-		return semester;
-	}
-
-	public void setSemester(Integer semester) {
-		this.semester = semester;
-	}
-
-	public String getAcademicYear() {
-		return academicYear;
-	}
-
-	public void setAcademicYear(String academicYear) {
-		this.academicYear = academicYear;
-	}
-
-	public Long getLecturerId() {
-		return lecturerId;
-	}
-
-	public void setLecturerId(Long lecturerId) {
-		this.lecturerId = lecturerId;
-	}
-
-	public String getRoom() {
-		return room;
-	}
-
-	public void setRoom(String room) {
-		this.room = room;
-	}
-
-	public Integer getCapacity() {
-		return capacity;
-	}
-
-	public void setCapacity(Integer capacity) {
-		this.capacity = capacity;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
+    }
 }

@@ -1,9 +1,11 @@
 package com.example.student_attendance.services;
 
+import com.example.student_attendance.Exceptions.ApiException;
 import com.example.student_attendance.models.Classes;
+import com.example.student_attendance.models.Enrollment;
 import com.example.student_attendance.repositories.ClassesRepository;
-import com.example.student_attendance.models.Students;
-import com.example.student_attendance.repositories.StudentRepository;
+import com.example.student_attendance.repositories.CoursesRepository;
+import com.example.student_attendance.repositories.EnrollmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,17 +14,42 @@ import java.util.List;
 public class ClassesService {
 
     private final ClassesRepository classesRepository;
-    private final StudentRepository studentRepository;
+    private final CoursesRepository coursesRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     public ClassesService(
             ClassesRepository classesRepository,
-            StudentRepository studentRepository
+            CoursesRepository coursesRepository,
+            EnrollmentRepository enrollmentRepository
     ) {
         this.classesRepository = classesRepository;
-        this.studentRepository = studentRepository;
+        this.coursesRepository = coursesRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     public Classes createClass(Classes classes) {
+
+        if (classesRepository.existsByCode(classes.getCode())) {
+            throw new ApiException(
+                    "Class code already exists",
+                    409
+            );
+        }
+
+        if (!coursesRepository.existsById(
+                classes.getCourseId())) {
+
+            throw new ApiException(
+                    "Course not found",
+                    404
+            );
+        }
+
+        if (classes.getStatus() == null ||
+                classes.getStatus().isBlank()) {
+
+            classes.setStatus("ACTIVE");
+        }
 
         return classesRepository.save(classes);
     }
@@ -35,14 +62,69 @@ public class ClassesService {
 
         return classesRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Class not found"));
+                        new ApiException(
+                                "Class not found",
+                                404
+                        ));
     }
 
-    public Classes updateClass(Long id, Classes updatedClass) {
+    public Classes getClassByCode(String code) {
+
+        return classesRepository.findByCode(code)
+                .orElseThrow(() ->
+                        new ApiException(
+                                "Class not found",
+                                404
+                        ));
+    }
+
+    public Classes updateClass(
+            Long id,
+            Classes updatedClass
+    ) {
 
         Classes existingClass = getClassById(id);
 
-        existingClass.setName(updatedClass.getName());
+        if (classesRepository.existsByCodeAndIdNot(
+                updatedClass.getCode(),
+                id)) {
+
+            throw new ApiException(
+                    "Class code already exists",
+                    409
+            );
+        }
+
+        if (!coursesRepository.existsById(
+                updatedClass.getCourseId())) {
+
+            throw new ApiException(
+                    "Course not found",
+                    404
+            );
+        }
+
+        existingClass.setCode(updatedClass.getCode());
+        existingClass.setCourseId(updatedClass.getCourseId());
+        existingClass.setSemester(updatedClass.getSemester());
+        existingClass.setAcademicYear(
+                updatedClass.getAcademicYear()
+        );
+        existingClass.setLecturerId(
+                updatedClass.getLecturerId()
+        );
+        existingClass.setRoom(updatedClass.getRoom());
+        existingClass.setCapacity(
+                updatedClass.getCapacity()
+        );
+
+        if (updatedClass.getStatus() != null &&
+                !updatedClass.getStatus().isBlank()) {
+
+            existingClass.setStatus(
+                    updatedClass.getStatus()
+            );
+        }
 
         return classesRepository.save(existingClass);
     }
@@ -57,11 +139,16 @@ public class ClassesService {
     public long getStudentCount(Long classId) {
 
         getClassById(classId);
-        return studentRepository.countByClassesId(classId);
+
+        return enrollmentRepository.countByClassId(classId);
     }
 
-    public List<Students> getStudentsByClass(Long classId) {
+    public List<Enrollment> getEnrollmentsByClass(
+            Long classId
+    ) {
+
         getClassById(classId);
-        return studentRepository.findByClassesId(classId);
+
+        return enrollmentRepository.findByClassId(classId);
     }
 }

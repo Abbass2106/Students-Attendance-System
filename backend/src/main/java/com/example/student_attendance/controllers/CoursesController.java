@@ -14,7 +14,9 @@ public class CoursesController {
 
     private final CoursesService coursesService;
 
-    public CoursesController(CoursesService coursesService) {
+    public CoursesController(
+            CoursesService coursesService
+    ) {
         this.coursesService = coursesService;
     }
 
@@ -22,13 +24,17 @@ public class CoursesController {
     public ResponseEntity<Courses> createCourse(
             @RequestBody Courses course
     ) {
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(coursesService.createCourse(course));
+                .body(
+                        coursesService.createCourse(course)
+                );
     }
 
     @GetMapping
     public ResponseEntity<List<Courses>> getAllCourses() {
+
         return ResponseEntity.ok(
                 coursesService.getAllCourses()
         );
@@ -38,6 +44,7 @@ public class CoursesController {
     public ResponseEntity<Courses> getCourseById(
             @PathVariable Long id
     ) {
+
         return ResponseEntity.ok(
                 coursesService.getCourseById(id)
         );
@@ -47,6 +54,7 @@ public class CoursesController {
     public ResponseEntity<Courses> getCourseByCode(
             @PathVariable String code
     ) {
+
         return ResponseEntity.ok(
                 coursesService.getCourseByCode(code)
         );
@@ -57,8 +65,12 @@ public class CoursesController {
             @PathVariable Long id,
             @RequestBody Courses course
     ) {
+
         return ResponseEntity.ok(
-                coursesService.updateCourse(id, course)
+                coursesService.updateCourse(
+                        id,
+                        course
+                )
         );
     }
 
@@ -66,6 +78,7 @@ public class CoursesController {
     public ResponseEntity<Void> deleteCourse(
             @PathVariable Long id
     ) {
+
         coursesService.deleteCourse(id);
 
         return ResponseEntity.noContent().build();

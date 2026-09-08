@@ -4,7 +4,6 @@ import com.example.student_attendance.models.Students;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
-import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Students, Long> {
 
@@ -16,7 +15,13 @@ public interface StudentRepository extends JpaRepository<Students, Long> {
 
     boolean existsByEmail(String email);
 
-    List<Students> findByClassesId(Long classId);
+    boolean existsByStudentNumberAndIdNot(
+            String studentNumber,
+            Long id
+    );
 
-    long countByClassesId(Long classId);
+    boolean existsByEmailAndIdNot(
+            String email,
+            Long id
+    );
 }

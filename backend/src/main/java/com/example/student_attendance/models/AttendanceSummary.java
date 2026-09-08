@@ -20,8 +20,8 @@ public class AttendanceSummary {
             long absent,
             long late,
             long excused,
-            double attendancePercentage) {
-
+            double attendancePercentage
+    ) {
         this.studentId = studentId;
         this.totalDays = totalDays;
         this.present = present;
@@ -83,7 +83,9 @@ public class AttendanceSummary {
         return attendancePercentage;
     }
 
-    public void setAttendancePercentage(double attendancePercentage) {
+    public void setAttendancePercentage(
+            double attendancePercentage
+    ) {
         this.attendancePercentage = attendancePercentage;
     }
 }

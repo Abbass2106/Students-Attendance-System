@@ -1,5 +1,6 @@
 package com.example.student_attendance.services;
 
+import com.example.student_attendance.Exceptions.ApiException;
 import com.example.student_attendance.models.AttendanceSession;
 import com.example.student_attendance.repositories.AttendanceSessionRepository;
 import com.example.student_attendance.repositories.ClassesRepository;
@@ -27,9 +28,30 @@ public class AttendanceSessionService {
             Long classId
     ) {
 
-        classesRepository.findById(classId)
-                .orElseThrow(() ->
-                        new RuntimeException("Class not found"));
+        if (!classesRepository.existsById(classId)) {
+            throw new ApiException(
+                    "Class not found",
+                    404
+            );
+        }
+
+        if (session.getDate() == null) {
+            throw new ApiException(
+                    "Session date is required",
+                    400
+            );
+        }
+
+        if (session.getStartTime() != null &&
+                session.getEndTime() != null &&
+                !session.getEndTime()
+                        .isAfter(session.getStartTime())) {
+
+            throw new ApiException(
+                    "End time must be after start time",
+                    400
+            );
+        }
 
         session.setClassId(classId);
 
@@ -44,19 +66,29 @@ public class AttendanceSessionService {
 
         return sessionRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Attendance session not found"));
+                        new ApiException(
+                                "Attendance session not found",
+                                404
+                        ));
     }
 
-    public List<AttendanceSession> getSessionsByClass(Long classId) {
+    public List<AttendanceSession> getSessionsByClass(
+            Long classId
+    ) {
 
         if (!classesRepository.existsById(classId)) {
-            throw new RuntimeException("Class not found");
+            throw new ApiException(
+                    "Class not found",
+                    404
+            );
         }
 
         return sessionRepository.findByClassId(classId);
     }
 
-    public List<AttendanceSession> getSessionsByDate(LocalDate date) {
+    public List<AttendanceSession> getSessionsByDate(
+            LocalDate date
+    ) {
 
         return sessionRepository.findByDate(date);
     }
@@ -67,7 +99,10 @@ public class AttendanceSessionService {
     ) {
 
         if (!classesRepository.existsById(classId)) {
-            throw new RuntimeException("Class not found");
+            throw new ApiException(
+                    "Class not found",
+                    404
+            );
         }
 
         return sessionRepository.findByClassIdAndDate(
@@ -78,7 +113,8 @@ public class AttendanceSessionService {
 
     public void deleteSession(Long id) {
 
-        AttendanceSession session = getSessionById(id);
+        AttendanceSession session =
+                getSessionById(id);
 
         sessionRepository.delete(session);
     }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.security.core.Authentication;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.example.student_attendance.services.UserService;
 
@@ -65,7 +66,10 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest
+        ) {
 
         String token = userService.login(
                 request.getEmail(),
@@ -74,8 +78,8 @@ public class UserController {
         ResponseCookie cookie = ResponseCookie
                 .from("accessToken", token)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
+                .secure(httpRequest.isSecure())
+                .sameSite(httpRequest.isSecure() ? "None" : "Lax")
                 .path("/")
                 .maxAge(60 * 60)
                 .build();

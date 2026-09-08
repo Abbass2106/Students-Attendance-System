@@ -1,5 +1,6 @@
 package com.example.student_attendance.services;
 
+import com.example.student_attendance.Exceptions.ApiException;
 import com.example.student_attendance.models.Enrollment;
 import com.example.student_attendance.repositories.ClassesRepository;
 import com.example.student_attendance.repositories.EnrollmentRepository;
@@ -25,23 +26,33 @@ public class EnrollmentService {
         this.classesRepository = classesRepository;
     }
 
-    public Enrollment enrollStudent(Long studentId, Long classId) {
+    public Enrollment enrollStudent(
+            Long studentId,
+            Long classId
+    ) {
 
-        studentRepository.findById(studentId)
-            .orElseThrow(() -> new RuntimeException("Student not found"));
+        if (!studentRepository.existsById(studentId)) {
+            throw new ApiException(
+                    "Student not found",
+                    404
+            );
+        }
 
-        classesRepository.findById(classId)
-            .orElseThrow(() -> new RuntimeException("Class not found"));
+        if (!classesRepository.existsById(classId)) {
+            throw new ApiException(
+                    "Class not found",
+                    404
+            );
+        }
 
-        boolean alreadyEnrolled =
-            enrollmentRepository.existsByStudentIdAndClassId(
-                        studentId,
-                        classId
-                );
+        if (enrollmentRepository.existsByStudentIdAndClassId(
+                studentId,
+                classId
+        )) {
 
-        if (alreadyEnrolled) {
-            throw new RuntimeException(
-                    "Student is already enrolled in this class"
+            throw new ApiException(
+                    "Student is already enrolled in this class",
+                    409
             );
         }
 
@@ -49,39 +60,63 @@ public class EnrollmentService {
 
         enrollment.setStudentId(studentId);
         enrollment.setClassId(classId);
+        enrollment.setStatus("ACTIVE");
 
         return enrollmentRepository.save(enrollment);
     }
 
-    public List<Enrollment> getStudentEnrollments(Long studentId) {
+    public List<Enrollment> getStudentEnrollments(
+            Long studentId
+    ) {
 
         if (!studentRepository.existsById(studentId)) {
-            throw new RuntimeException("Student not found");
+            throw new ApiException(
+                    "Student not found",
+                    404
+            );
         }
 
         return enrollmentRepository.findByStudentId(studentId);
     }
 
-    public List<Enrollment> getClassEnrollments(Long classId) {
+    public List<Enrollment> getClassEnrollments(
+            Long classId
+    ) {
 
         if (!classesRepository.existsById(classId)) {
-            throw new RuntimeException("Class not found");
+            throw new ApiException(
+                    "Class not found",
+                    404
+            );
         }
 
         return enrollmentRepository.findByClassId(classId);
     }
 
-    public Enrollment getEnrollment(Long studentId, Long classId) {
+    public Enrollment getEnrollment(
+            Long studentId,
+            Long classId
+    ) {
 
         return enrollmentRepository
-                .findByStudentIdAndClassId(studentId, classId)
+                .findByStudentIdAndClassId(
+                        studentId,
+                        classId
+                )
                 .orElseThrow(() ->
-                        new RuntimeException("Enrollment not found"));
+                        new ApiException(
+                                "Enrollment not found",
+                                404
+                        ));
     }
 
-    public void removeEnrollment(Long studentId, Long classId) {
+    public void removeEnrollment(
+            Long studentId,
+            Long classId
+    ) {
 
-        Enrollment enrollment = getEnrollment(studentId, classId);
+        Enrollment enrollment =
+                getEnrollment(studentId, classId);
 
         enrollmentRepository.delete(enrollment);
     }

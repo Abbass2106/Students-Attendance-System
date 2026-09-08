@@ -1,10 +1,13 @@
 package com.example.student_attendance.services;
 
+import com.example.student_attendance.Exceptions.ApiException;
 import com.example.student_attendance.models.Attendance;
 import com.example.student_attendance.models.AttendanceStatus;
+import com.example.student_attendance.models.AttendanceSession;
+import com.example.student_attendance.models.Enrollment;
 import com.example.student_attendance.repositories.AttendanceRepository;
-import com.example.student_attendance.repositories.EnrollmentRepository;
 import com.example.student_attendance.repositories.AttendanceSessionRepository;
+import com.example.student_attendance.repositories.EnrollmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,21 +35,48 @@ public class AttendanceService {
             AttendanceStatus status
     ) {
 
-        var session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Attendance session not found"));
+        AttendanceSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ApiException(
+                                        "Attendance session not found",
+                                        404
+                                ));
 
-        enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+        Enrollment enrollment =
+                enrollmentRepository.findById(enrollmentId)
+                        .orElseThrow(() ->
+                                new ApiException(
+                                        "Enrollment not found",
+                                        404
+                                ));
 
-        boolean exists =
-                attendanceRepository.existsBySessionIdAndEnrollmentId(
+        if (enrollment.getClassId() == null ||
+                !enrollment.getClassId()
+                        .equals(session.getClassId())) {
+
+            throw new ApiException(
+                    "Enrollment does not belong to this class",
+                    400
+            );
+        }
+
+        if (status == null) {
+            throw new ApiException(
+                    "Attendance status is required",
+                    400
+            );
+        }
+
+        if (attendanceRepository
+                .existsBySessionIdAndEnrollmentId(
                         sessionId,
                         enrollmentId
-                );
+                )) {
 
-        if (exists) {
-            throw new RuntimeException(
-                    "Attendance already exists for this student"
+            throw new ApiException(
+                    "Attendance already exists for this student",
+                    409
             );
         }
 
@@ -54,16 +84,20 @@ public class AttendanceService {
 
         attendance.setSessionId(sessionId);
         attendance.setEnrollmentId(enrollmentId);
-        attendance.setDate(session.getDate());
         attendance.setStatus(status);
 
         return attendanceRepository.save(attendance);
     }
 
-    public List<Attendance> getAttendanceBySession(Long sessionId) {
+    public List<Attendance> getAttendanceBySession(
+            Long sessionId
+    ) {
 
         if (!sessionRepository.existsById(sessionId)) {
-            throw new RuntimeException("Attendance session not found");
+            throw new ApiException(
+                    "Attendance session not found",
+                    404
+            );
         }
 
         return attendanceRepository.findBySessionId(sessionId);
@@ -74,10 +108,15 @@ public class AttendanceService {
     ) {
 
         if (!enrollmentRepository.existsById(enrollmentId)) {
-            throw new RuntimeException("Enrollment not found");
+            throw new ApiException(
+                    "Enrollment not found",
+                    404
+            );
         }
 
-        return attendanceRepository.findByEnrollmentId(enrollmentId);
+        return attendanceRepository.findByEnrollmentId(
+                enrollmentId
+        );
     }
 
     public Attendance getAttendance(
@@ -91,7 +130,10 @@ public class AttendanceService {
                         enrollmentId
                 )
                 .orElseThrow(() ->
-                        new RuntimeException("Attendance not found"));
+                        new ApiException(
+                                "Attendance not found",
+                                404
+                        ));
     }
 
     public Attendance updateAttendance(
@@ -100,8 +142,18 @@ public class AttendanceService {
             AttendanceStatus status
     ) {
 
+        if (status == null) {
+            throw new ApiException(
+                    "Attendance status is required",
+                    400
+            );
+        }
+
         Attendance attendance =
-                getAttendance(sessionId, enrollmentId);
+                getAttendance(
+                        sessionId,
+                        enrollmentId
+                );
 
         attendance.setStatus(status);
 
@@ -114,7 +166,10 @@ public class AttendanceService {
     ) {
 
         Attendance attendance =
-                getAttendance(sessionId, enrollmentId);
+                getAttendance(
+                        sessionId,
+                        enrollmentId
+                );
 
         attendanceRepository.delete(attendance);
     }

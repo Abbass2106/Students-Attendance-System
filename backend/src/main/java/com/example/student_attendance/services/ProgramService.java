@@ -1,6 +1,8 @@
 package com.example.student_attendance.services;
 
+import com.example.student_attendance.Exceptions.ApiException;
 import com.example.student_attendance.models.Program;
+import com.example.student_attendance.repositories.DepartmentRepository;
 import com.example.student_attendance.repositories.ProgramRepository;
 import org.springframework.stereotype.Service;
 
@@ -10,15 +12,34 @@ import java.util.List;
 public class ProgramService {
 
     private final ProgramRepository programRepository;
+    private final DepartmentRepository departmentRepository;
 
-    public ProgramService(ProgramRepository programRepository) {
+    public ProgramService(
+            ProgramRepository programRepository,
+            DepartmentRepository departmentRepository
+    ) {
         this.programRepository = programRepository;
+        this.departmentRepository = departmentRepository;
     }
 
     public Program createProgram(Program program) {
 
-        if (programRepository.existsByCode(program.getCode())) {
-            throw new RuntimeException("Program code already exists");
+        if (programRepository.existsByCode(
+                program.getCode())) {
+
+            throw new ApiException(
+                    "Program code already exists",
+                    409
+            );
+        }
+
+        if (!departmentRepository.existsById(
+                program.getDepartmentId())) {
+
+            throw new ApiException(
+                    "Department not found",
+                    404
+            );
         }
 
         return programRepository.save(program);
@@ -32,29 +53,63 @@ public class ProgramService {
 
         return programRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Program not found"));
+                        new ApiException(
+                                "Program not found",
+                                404
+                        ));
     }
 
     public Program getProgramByCode(String code) {
 
         return programRepository.findByCode(code)
                 .orElseThrow(() ->
-                        new RuntimeException("Program not found"));
+                        new ApiException(
+                                "Program not found",
+                                404
+                        ));
     }
 
-    public Program updateProgram(Long id, Program updatedProgram) {
+    public Program updateProgram(
+            Long id,
+            Program updatedProgram
+    ) {
 
-        Program existingProgram = getProgramById(id);
+        Program existing =
+                getProgramById(id);
 
-        existingProgram.setCode(updatedProgram.getCode());
-        existingProgram.setName(updatedProgram.getName());
+        if (!existing.getCode()
+                .equals(updatedProgram.getCode()) &&
+                programRepository.existsByCode(
+                        updatedProgram.getCode())) {
 
-        return programRepository.save(existingProgram);
+            throw new ApiException(
+                    "Program code already exists",
+                    409
+            );
+        }
+
+        if (!departmentRepository.existsById(
+                updatedProgram.getDepartmentId())) {
+
+            throw new ApiException(
+                    "Department not found",
+                    404
+            );
+        }
+
+        existing.setCode(updatedProgram.getCode());
+        existing.setName(updatedProgram.getName());
+        existing.setDepartmentId(
+                updatedProgram.getDepartmentId()
+        );
+
+        return programRepository.save(existing);
     }
 
     public void deleteProgram(Long id) {
 
-        Program program = getProgramById(id);
+        Program program =
+                getProgramById(id);
 
         programRepository.delete(program);
     }

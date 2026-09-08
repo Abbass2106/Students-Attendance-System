@@ -25,9 +25,14 @@ public class SecurityConfig {
             JwtAuthenticationEntryPoint authenticationEntryPoint,
             JwtAccessDeniedHandler accessDeniedHandler
     ) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.authenticationEntryPoint = authenticationEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
+        this.jwtAuthenticationFilter =
+                jwtAuthenticationFilter;
+
+        this.authenticationEntryPoint =
+                authenticationEntryPoint;
+
+        this.accessDeniedHandler =
+                accessDeniedHandler;
     }
 
     @Bean
@@ -38,25 +43,23 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
 
-                // CORS configuration
                 .cors(cors -> {
                 })
 
-                // Do not create HTTP sessions.
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                // handling authentication/authorization errors.
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(
-                                authenticationEntryPoint
-                        )
-                        .accessDeniedHandler(
-                                accessDeniedHandler
-                        )
+                .exceptionHandling(exception ->
+                        exception
+                                .authenticationEntryPoint(
+                                        authenticationEntryPoint
+                                )
+                                .accessDeniedHandler(
+                                        accessDeniedHandler
+                                )
                 )
 
                 .authorizeHttpRequests(auth -> auth
@@ -74,14 +77,19 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
 
                         .requestMatchers(
-                                "/api/students/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
+                                "/api/departments/**"
+                        ).hasRole("ADMIN")
 
                         .requestMatchers(
-                                "/api/enrollments/**"
+                                "/api/programs/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                "/api/courses/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                "/api/students/**"
                         ).hasAnyRole(
                                 "ADMIN",
                                 "TEACHER"
@@ -95,16 +103,11 @@ public class SecurityConfig {
                         )
 
                         .requestMatchers(
-                                "/api/courses/**"
-                        ).hasRole("ADMIN")
-
-                        .requestMatchers(
-                                "/api/departments/**"
-                        ).hasRole("ADMIN")
-
-                        .requestMatchers(
-                                "/api/programs/**"
-                        ).hasRole("ADMIN")
+                                "/api/enrollments/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
 
                         .requestMatchers(
                                 "/api/attendance-sessions/**"
@@ -133,6 +136,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 }
