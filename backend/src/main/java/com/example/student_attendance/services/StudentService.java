@@ -1,80 +1,66 @@
 package com.example.student_attendance.services;
 
-import org.springframework.stereotype.Service;
 import com.example.student_attendance.models.Students;
-import com.example.student_attendance.Exceptions.ApiException;
-import com.example.student_attendance.models.Classes;
-
 import com.example.student_attendance.repositories.StudentRepository;
-import com.example.student_attendance.repositories.ClassRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
-
 
 @Service
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final ClassRepository classRepository;
 
-    public StudentService(StudentRepository studentRepository, ClassRepository classRepository) {
-        this.studentRepository=studentRepository;
-        this.classRepository=classRepository;
+    public StudentService(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
     }
 
-    //create students
-    public Students createStudents(Students students){
+    public Students createStudent(Students student) {
 
-        Long classId = students.getClasses().getId();
-        Classes classes = classRepository.findById(classId).orElse(null);
-        students.setClasses(classes);
+        if (studentRepository.existsByStudentNumber(student.getStudentNumber())) {
+            throw new RuntimeException("Student number already exists");
+        }
 
-        return studentRepository.save(students);
+        if (studentRepository.existsByEmail(student.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        return studentRepository.save(student);
     }
 
-    //read students
-    public List<Students> getAllStudents(){
+    public List<Students> getAllStudents() {
         return studentRepository.findAll();
     }
 
-    //read by id
-    public Students getStudentById(Long id){
-        Students students = studentRepository.findById(id).orElse(null);
-
-        if(students == null){
-            throw new ApiException("Student not found", 404);
-        }
-
-        return students;
+    public Students getStudentById(Long id) {
+        return studentRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Student not found with id: " + id));
     }
 
-    //read students by class
-    public List<Students> getStudentsByClass(Long classId){
-        return studentRepository.findByClassesId(classId);
+    public Students getStudentByNumber(String studentNumber) {
+        return studentRepository.findByStudentNumber(studentNumber)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Student not found with number: " + studentNumber
+                        ));
     }
 
-    //edit student
-    public Students editStudents(Students students,Long id){
-        Students existingStudent=studentRepository.findById(id).orElse(null);
-        
-        if(existingStudent == null){
-            throw new ApiException("Student not found", 404);
-        }
+    public Students updateStudent(Long id, Students updatedStudent) {
 
-        existingStudent.setFirstName(students.getFirstName());
-        existingStudent.setLastName(students.getLastName());
-        existingStudent.setEmail(students.getEmail());
-        existingStudent.setClasses(students.getClasses());
+        Students existingStudent = getStudentById(id);
+
+        existingStudent.setFirstName(updatedStudent.getFirstName());
+        existingStudent.setLastName(updatedStudent.getLastName());
+        existingStudent.setEmail(updatedStudent.getEmail());
 
         return studentRepository.save(existingStudent);
     }
 
-    //delete student
-    public boolean deleteStudent(Long id){
-     studentRepository.deleteById(id);
-     return true;
-    }
+    public void deleteStudent(Long id) {
 
-    
-    
+        Students student = getStudentById(id);
+
+        studentRepository.delete(student);
+    }
 }

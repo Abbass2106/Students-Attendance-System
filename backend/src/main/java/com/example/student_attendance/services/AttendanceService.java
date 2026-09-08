@@ -2,194 +2,132 @@ package com.example.student_attendance.services;
 
 import com.example.student_attendance.models.Attendance;
 import com.example.student_attendance.models.AttendanceStatus;
-import com.example.student_attendance.models.AttendanceSummary;
-import com.example.student_attendance.models.ClassAttendanceSummary;
-import com.example.student_attendance.models.Classes;
-import com.example.student_attendance.models.Students;
 import com.example.student_attendance.repositories.AttendanceRepository;
-import com.example.student_attendance.repositories.ClassRepository;
-import com.example.student_attendance.repositories.StudentRepository;
-
-import java.time.LocalDate;
-import java.util.List;
+import com.example.student_attendance.repositories.EnrollmentRepository;
+import com.example.student_attendance.repositories.AttendanceSessionRepository;
 import org.springframework.stereotype.Service;
 
-import com.example.student_attendance.Exceptions.ApiException;
+import java.util.List;
 
 @Service
 public class AttendanceService {
 
-    private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
-    private final ClassRepository classRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final AttendanceSessionRepository sessionRepository;
 
-    public AttendanceService(AttendanceRepository attendanceRepository, StudentRepository studentRepository,
-            ClassRepository classRepository) {
-        this.studentRepository = studentRepository;
+    public AttendanceService(
+            AttendanceRepository attendanceRepository,
+            EnrollmentRepository enrollmentRepository,
+            AttendanceSessionRepository sessionRepository
+    ) {
         this.attendanceRepository = attendanceRepository;
-        this.classRepository = classRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.sessionRepository = sessionRepository;
     }
 
-    // create attendance
-    public Attendance createAttendance(Attendance attendance) {
-        Long studentId = attendance.getStudents().getId();
-        Students students = studentRepository.findById(studentId).orElse(null);
+    public Attendance createAttendance(
+            Long sessionId,
+            Long enrollmentId,
+            AttendanceStatus status
+    ) {
 
-        if (students == null) {
-            throw new ApiException("Student not found", 404);
+        var session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Attendance session not found"));
+
+        enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+
+        boolean exists =
+                attendanceRepository.existsBySessionIdAndEnrollmentId(
+                        sessionId,
+                        enrollmentId
+                );
+
+        if (exists) {
+            throw new RuntimeException(
+                    "Attendance already exists for this student"
+            );
         }
 
-        Long classId = attendance.getClasses() != null ? attendance.getClasses().getId()
-                : students.getClasses() != null ? students.getClasses().getId() : null;
-        Classes classes = classId == null ? null : classRepository.findById(classId).orElse(null);
+        Attendance attendance = new Attendance();
 
-        if (classes == null) {
-            throw new ApiException("Class not found", 404);
-        }
+        attendance.setSessionId(sessionId);
+        attendance.setEnrollmentId(enrollmentId);
+        attendance.setDate(session.getDate());
+        attendance.setStatus(status);
 
-        boolean existingStudent = attendanceRepository.existsByStudentsIdAndDateAndClassesId(
-                studentId, attendance.getDate(), classId);
-        if (existingStudent) {
-            throw new ApiException("Student already signed in", 409);
-        }
-
-        attendance.setStudents(students);
-        attendance.setClasses(classes);
         return attendanceRepository.save(attendance);
     }
 
-    // read attendance
-    public List<Attendance> getAttendance() {
-        return attendanceRepository.findAll();
-    }
+    public List<Attendance> getAttendanceBySession(Long sessionId) {
 
-    // get attendance by id
-    public Attendance getAttendanceById(Long id) {
-        Attendance attendance = attendanceRepository.findById(id).orElse(null);
-
-        if (attendance == null) {
-            throw new ApiException("Attendance not available", 404);
+        if (!sessionRepository.existsById(sessionId)) {
+            throw new RuntimeException("Attendance session not found");
         }
 
-        return attendance;
+        return attendanceRepository.findBySessionId(sessionId);
     }
 
-    // get students Attendance by id
-    public List<Attendance> getAttendanceByStudent(Long studentId) {
-        return attendanceRepository.findStudentsById(studentId);
-    }
+    public List<Attendance> getAttendanceByEnrollment(
+            Long enrollmentId
+    ) {
 
-    // get students attendance by date
-    public List<Attendance> getAttendanceByDate(LocalDate date) {
-        return attendanceRepository.findByDate(date);
-    }
-
-    // get students attendance by class and date
-    public List<Attendance> getAttendanceByClassAndDate(Long classId, LocalDate date) {
-        return attendanceRepository.findByClassesIdAndDate(classId, date);
-    }
-
-    // update attendance
-    public Attendance updateAttendance(Attendance attendance, Long id) {
-        Attendance existingAttendance = attendanceRepository.findById(id).orElse(null);
-
-        if (existingAttendance == null) {
-            throw new ApiException("Attendance not found", 404);
+        if (!enrollmentRepository.existsById(enrollmentId)) {
+            throw new RuntimeException("Enrollment not found");
         }
 
-        existingAttendance.setDate(attendance.getDate());
-        existingAttendance.setStatus(attendance.getStatus());
-
-        return attendanceRepository.save(existingAttendance);
+        return attendanceRepository.findByEnrollmentId(enrollmentId);
     }
 
-    // delete attendance
-    public void deleteAttendance(Long id) {
-        attendanceRepository.deleteById(id);
+    public Attendance getAttendance(
+            Long sessionId,
+            Long enrollmentId
+    ) {
+
+        return attendanceRepository
+                .findBySessionIdAndEnrollmentId(
+                        sessionId,
+                        enrollmentId
+                )
+                .orElseThrow(() ->
+                        new RuntimeException("Attendance not found"));
     }
 
-    // get attendance summary by student
-    public AttendanceSummary getAttendanceSummary(Long studentId) {
+    public Attendance updateAttendance(
+            Long sessionId,
+            Long enrollmentId,
+            AttendanceStatus status
+    ) {
 
-        // make sure student exists
-        Students student = studentRepository.findById(studentId).orElse(null);
+        Attendance attendance =
+                getAttendance(sessionId, enrollmentId);
 
-        if (student == null) {
-            throw new ApiException("Student not found", 409);
-        }
+        attendance.setStatus(status);
 
-        // count attendance records
-        long totalDays = attendanceRepository.countByStudentsId(studentId);
-
-        long present = attendanceRepository.countByStudentsIdAndStatus(
-                studentId,
-                AttendanceStatus.PRESENT);
-
-        long absent = attendanceRepository.countByStudentsIdAndStatus(
-                studentId,
-                AttendanceStatus.ABSENT);
-
-        long late = attendanceRepository.countByStudentsIdAndStatus(
-                studentId,
-                AttendanceStatus.LATE);
-
-        long excused = attendanceRepository.countByStudentsIdAndStatus(
-                studentId,
-                AttendanceStatus.EXCUSED);
-
-        // calculate percentage
-        double attendancePercentage = 0;
-
-        if (totalDays > 0) {
-            attendancePercentage = ((double) (present + late) / totalDays) * 100;
-        }
-
-        return new AttendanceSummary(
-                studentId,
-                totalDays,
-                present,
-                absent,
-                late,
-                excused,
-                attendancePercentage);
+        return attendanceRepository.save(attendance);
     }
 
-    // get attendance summary by class
-    public ClassAttendanceSummary getClassAttendanceSummary(Long classId) {
+    public void deleteAttendance(
+            Long sessionId,
+            Long enrollmentId
+    ) {
 
-        // count all attendance records for this class
-        long totalRecords = attendanceRepository.countByClassesId(classId);
+        Attendance attendance =
+                getAttendance(sessionId, enrollmentId);
 
-        long present = attendanceRepository.countByClassesIdAndStatus(
-                classId,
-                AttendanceStatus.PRESENT);
+        attendanceRepository.delete(attendance);
+    }
 
-        long absent = attendanceRepository.countByClassesIdAndStatus(
-                classId,
-                AttendanceStatus.ABSENT);
+    public long countAttendanceByStatus(
+            Long enrollmentId,
+            AttendanceStatus status
+    ) {
 
-        long late = attendanceRepository.countByClassesIdAndStatus(
-                classId,
-                AttendanceStatus.LATE);
-
-        long excused = attendanceRepository.countByClassesIdAndStatus(
-                classId,
-                AttendanceStatus.EXCUSED);
-
-        // calculate percentage
-        double attendancePercentage = 0;
-
-        if (totalRecords > 0) {
-            attendancePercentage = ((double) (present + late) / totalRecords) * 100;
-        }
-
-        return new ClassAttendanceSummary(
-                classId,
-                totalRecords,
-                present,
-                absent,
-                late,
-                excused,
-                attendancePercentage);
+        return attendanceRepository
+                .countByEnrollmentIdAndStatus(
+                        enrollmentId,
+                        status
+                );
     }
 }

@@ -6,80 +6,133 @@ import com.example.student_attendance.Security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
 
-        private final JwtAuthenticationFilter jwtAuthenticationFilter;
-        private final JwtAuthenticationEntryPoint authenticationEntryPoint;
-        private final JwtAccessDeniedHandler accessDeniedHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtAccessDeniedHandler accessDeniedHandler;
 
-        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                        JwtAuthenticationEntryPoint authenticationEntryPoint,
-                        JwtAccessDeniedHandler accessDeniedHandler) {
-                this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-                this.authenticationEntryPoint = authenticationEntryPoint;
-                this.accessDeniedHandler = accessDeniedHandler;
-        }
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            JwtAuthenticationEntryPoint authenticationEntryPoint,
+            JwtAccessDeniedHandler accessDeniedHandler
+    ) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
+    }
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http)
-                        throws Exception {
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
 
-                http
-                                .csrf(csrf -> csrf.disable())
+        http
+                .csrf(csrf -> csrf.disable())
 
-                                .cors(cors -> {
-                                })
+                // CORS configuration
+                .cors(cors -> {
+                })
 
-                                .sessionManagement(session -> session.sessionCreationPolicy(
-                                                SessionCreationPolicy.STATELESS))
+                // Do not create HTTP sessions.
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
 
-                                .exceptionHandling(exception -> exception
-                                                .authenticationEntryPoint(authenticationEntryPoint)
-                                                .accessDeniedHandler(accessDeniedHandler))
+                // handling authentication/authorization errors.
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
+                        .accessDeniedHandler(
+                                accessDeniedHandler
+                        )
+                )
 
-                                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth
 
-                                                .requestMatchers("/api/users/login")
-                                                .permitAll()
+                        .requestMatchers(
+                                "/api/users/login"
+                        ).permitAll()
 
-                                                .requestMatchers("/api/users/me")
-                                                .authenticated()
+                        .requestMatchers(
+                                "/api/users/me"
+                        ).authenticated()
 
-                                                .requestMatchers("/api/users/**")
-                                                .hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/users/**"
+                        ).hasRole("ADMIN")
 
-                                                .requestMatchers("/api/classes/**")
-                                                .hasAnyRole("ADMIN","TEACHER")
+                        .requestMatchers(
+                                "/api/students/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
 
-                                                .requestMatchers("/api/students/**")
-                                                .hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(
+                                "/api/enrollments/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
 
-                                                .requestMatchers("/api/attendance/**")
-                                                .hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers(
+                                "/api/classes/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
 
-                                                .anyRequest()
-                                                .authenticated())
+                        .requestMatchers(
+                                "/api/courses/**"
+                        ).hasRole("ADMIN")
 
-                                .addFilterBefore(
-                                                jwtAuthenticationFilter,
-                                                UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers(
+                                "/api/departments/**"
+                        ).hasRole("ADMIN")
 
-                return http.build();
-        }
+                        .requestMatchers(
+                                "/api/programs/**"
+                        ).hasRole("ADMIN")
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+                        .requestMatchers(
+                                "/api/attendance-sessions/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
+
+                        .requestMatchers(
+                                "/api/attendance/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TEACHER"
+                        )
+
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }

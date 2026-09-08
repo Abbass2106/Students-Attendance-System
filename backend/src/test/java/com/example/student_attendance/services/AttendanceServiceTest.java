@@ -14,13 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.example.student_attendance.Exceptions.ApiException;
-import com.example.student_attendance.models.Attendance;
-import com.example.student_attendance.models.Classes;
-import com.example.student_attendance.models.Students;
+import com.example.student_attendance.models.AttendanceSession;
+import com.example.student_attendance.models.AttendanceStatus;
+import com.example.student_attendance.models.Enrollment;
 import com.example.student_attendance.repositories.AttendanceRepository;
-import com.example.student_attendance.repositories.ClassRepository;
-import com.example.student_attendance.repositories.StudentRepository;
+import com.example.student_attendance.repositories.AttendanceSessionRepository;
+import com.example.student_attendance.repositories.EnrollmentRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceTest {
@@ -29,47 +28,30 @@ class AttendanceServiceTest {
     private AttendanceRepository attendanceRepository;
 
     @Mock
-    private StudentRepository studentRepository;
+    private EnrollmentRepository enrollmentRepository;
 
     @Mock
-    private ClassRepository classRepository;
+    private AttendanceSessionRepository sessionRepository;
 
     @InjectMocks
     private AttendanceService attendanceService;
 
     @Test
-    void createAttendance_rejects_duplicate_for_the_same_student_date_and_class() {
+    void createAttendance_rejects_duplicate_for_the_same_session_and_enrollment() {
         LocalDate date = LocalDate.of(2026, 9, 1);
-        Students student = student(10L);
-        Classes schoolClass = schoolClass(20L);
-        Attendance attendance = attendance(student, schoolClass, date);
+        AttendanceSession session = new AttendanceSession();
+        session.setId(10L);
+        session.setDate(date);
+        Enrollment enrollment = new Enrollment();
+        enrollment.setId(20L);
 
-        when(studentRepository.findById(10L)).thenReturn(Optional.of(student));
-        when(classRepository.findById(20L)).thenReturn(Optional.of(schoolClass));
-        when(attendanceRepository.existsByStudentsIdAndDateAndClassesId(10L, date, 20L)).thenReturn(true);
+        when(sessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(enrollmentRepository.findById(20L)).thenReturn(Optional.of(enrollment));
+        when(attendanceRepository.existsBySessionIdAndEnrollmentId(10L, 20L)).thenReturn(true);
 
-        assertThrows(ApiException.class, () -> attendanceService.createAttendance(attendance));
+        assertThrows(RuntimeException.class,
+                () -> attendanceService.createAttendance(10L, 20L, AttendanceStatus.PRESENT));
 
-        verify(attendanceRepository).existsByStudentsIdAndDateAndClassesId(eq(10L), eq(date), eq(20L));
-    }
-
-    private Attendance attendance(Students student, Classes schoolClass, LocalDate date) {
-        Attendance attendance = new Attendance();
-        attendance.setStudents(student);
-        attendance.setClasses(schoolClass);
-        attendance.setDate(date);
-        return attendance;
-    }
-
-    private Students student(Long id) {
-        Students student = new Students();
-        student.setId(id);
-        return student;
-    }
-
-    private Classes schoolClass(Long id) {
-        Classes schoolClass = new Classes();
-        schoolClass.setId(id);
-        return schoolClass;
+        verify(attendanceRepository).existsBySessionIdAndEnrollmentId(eq(10L), eq(20L));
     }
 }

@@ -1,92 +1,103 @@
 package com.example.student_attendance.controllers;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.example.student_attendance.models.AttendanceSummary;
-import com.example.student_attendance.models.ClassAttendanceSummary;
 import com.example.student_attendance.models.Attendance;
+import com.example.student_attendance.models.AttendanceStatus;
 import com.example.student_attendance.services.AttendanceService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/attendance")
 public class AttendanceController {
 
-    final AttendanceService attendanceService;
+    private final AttendanceService attendanceService;
 
-    public AttendanceController(AttendanceService attendanceService) {
+    public AttendanceController(
+            AttendanceService attendanceService
+    ) {
         this.attendanceService = attendanceService;
     }
 
-    // create attendance
     @PostMapping
-    public Attendance createAttendance(@Valid @RequestBody Attendance attendance) {
-        return attendanceService.createAttendance(attendance);
+    public ResponseEntity<Attendance> createAttendance(
+            @RequestParam Long sessionId,
+            @RequestParam Long enrollmentId,
+            @RequestParam AttendanceStatus status
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        attendanceService.createAttendance(
+                                sessionId,
+                                enrollmentId,
+                                status
+                        )
+                );
     }
 
-    // read attendance
-    @GetMapping
-    public List<Attendance> getAttendance() {
-        return attendanceService.getAttendance();
+    @GetMapping("/session/{sessionId}")
+    public ResponseEntity<List<Attendance>> getAttendanceBySession(
+            @PathVariable Long sessionId
+    ) {
+        return ResponseEntity.ok(
+                attendanceService.getAttendanceBySession(
+                        sessionId
+                )
+        );
     }
 
-    // get attendance by id
-    @GetMapping("/{id}")
-    public Attendance getAttendanceById(@PathVariable Long id) {
-        return attendanceService.getAttendanceById(id);
+    @GetMapping("/enrollment/{enrollmentId}")
+    public ResponseEntity<List<Attendance>> getAttendanceByEnrollment(
+            @PathVariable Long enrollmentId
+    ) {
+        return ResponseEntity.ok(
+                attendanceService.getAttendanceByEnrollment(
+                        enrollmentId
+                )
+        );
     }
 
-    // get attendance by student
-    @GetMapping("/student/{id}")
-    public List<Attendance> getAttendanceByStudent(@PathVariable Long id) {
-        return attendanceService.getAttendanceByStudent(id);
+    @GetMapping("/session/{sessionId}/enrollment/{enrollmentId}")
+    public ResponseEntity<Attendance> getAttendance(
+            @PathVariable Long sessionId,
+            @PathVariable Long enrollmentId
+    ) {
+        return ResponseEntity.ok(
+                attendanceService.getAttendance(
+                        sessionId,
+                        enrollmentId
+                )
+        );
     }
 
-    // get attendance by date
-    @GetMapping("/date/{date}")
-    public List<Attendance> getAttendanceByDate(@PathVariable LocalDate date) {
-        return attendanceService.getAttendanceByDate(date);
+    @PutMapping("/session/{sessionId}/enrollment/{enrollmentId}")
+    public ResponseEntity<Attendance> updateAttendance(
+            @PathVariable Long sessionId,
+            @PathVariable Long enrollmentId,
+            @RequestParam AttendanceStatus status
+    ) {
+        return ResponseEntity.ok(
+                attendanceService.updateAttendance(
+                        sessionId,
+                        enrollmentId,
+                        status
+                )
+        );
     }
 
-    // get attendance by class and date
-    @GetMapping("/class/{classId}/date/{date}")
-    public List<Attendance> getAttendanceByClassAndDate(@PathVariable Long classId, @PathVariable LocalDate date) {
-        return attendanceService.getAttendanceByClassAndDate(classId, date);
-    }
+    @DeleteMapping("/session/{sessionId}/enrollment/{enrollmentId}")
+    public ResponseEntity<Void> deleteAttendance(
+            @PathVariable Long sessionId,
+            @PathVariable Long enrollmentId
+    ) {
+        attendanceService.deleteAttendance(
+                sessionId,
+                enrollmentId
+        );
 
-    // update attendance
-    @PutMapping("/{id}")
-    public Attendance updateAttendance(@Valid @RequestBody Attendance attendance, @PathVariable Long id) {
-        return attendanceService.updateAttendance(attendance, id);
-    }
-
-    // delete attendance
-    @DeleteMapping("/{id}")
-    public void deleteAttendance(@PathVariable Long id) {
-        attendanceService.deleteAttendance(id);
-    }
-
-    // get attendance by students
-    @GetMapping("/student/{id}/summary")
-    public AttendanceSummary getAttendanceSummary(@PathVariable Long id) {
-        return attendanceService.getAttendanceSummary(id);
-    }
-
-    // get attendance summary by class
-    @GetMapping("/class/{classId}/summary")
-    public ClassAttendanceSummary getClassAttendanceSummary(
-            @PathVariable Long classId) {
-
-        return attendanceService.getClassAttendanceSummary(classId);
+        return ResponseEntity.noContent().build();
     }
 }
