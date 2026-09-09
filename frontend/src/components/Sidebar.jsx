@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
     LayoutDashboard,
     Users,
@@ -8,18 +8,34 @@ import {
     UserCog,
     LogOut,
     School,
+    Building2,
+    ClipboardList,
 } from 'lucide-react'
+import { useAuth, ROLES } from '../context/AuthContext'
+
+// Every link declares which roles can see it. Admin sees everything;
+// Teacher sees class/attendance-level tools; Student only sees their portal.
+const ALL_LINKS = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT] },
+    { name: 'Students', path: '/dashboard/students', icon: GraduationCap, roles: [ROLES.ADMIN, ROLES.TEACHER] },
+    { name: 'Classes', path: '/dashboard/classes', icon: School, roles: [ROLES.ADMIN, ROLES.TEACHER] },
+    { name: 'Enrollments', path: '/dashboard/enrollments', icon: ClipboardList, roles: [ROLES.ADMIN, ROLES.TEACHER] },
+    { name: 'Attendance', path: '/dashboard/attendance', icon: ClipboardCheck, roles: [ROLES.ADMIN, ROLES.TEACHER] },
+    { name: 'Reports', path: '/dashboard/reports', icon: BarChart3, roles: [ROLES.ADMIN, ROLES.TEACHER] },
+    { name: 'Academic Structure', path: '/dashboard/academic-structure', icon: Building2, roles: [ROLES.ADMIN] },
+    { name: 'Users', path: '/dashboard/users', icon: UserCog, roles: [ROLES.ADMIN] },
+]
 
 function Sidebar() {
+    const { role, logout } = useAuth()
+    const navigate = useNavigate()
 
-    const links = [
-        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Students', path: '/dashboard/students', icon: GraduationCap },
-        { name: 'Classes', path: '/dashboard/classes', icon: School },
-        { name: 'Attendance', path: '/dashboard/attendance', icon: ClipboardCheck },
-        { name: 'Reports', path: '/dashboard/reports', icon: BarChart3 },
-        { name: 'Users', path: '/dashboard/users', icon: UserCog },
-    ]
+    const links = ALL_LINKS.filter((link) => link.roles.includes(role))
+
+    const handleLogout = () => {
+        logout()
+        navigate('/login', { replace: true })
+    }
 
     return (
         <aside className="flex w-64 shrink-0 flex-col bg-slate-950 text-white">
@@ -77,7 +93,10 @@ function Sidebar() {
             {/* Bottom */}
             <div className="border-t border-white/10 p-3">
 
-                <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white">
+                <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
+                >
                     <LogOut size={18} />
                     Logout
                 </button>

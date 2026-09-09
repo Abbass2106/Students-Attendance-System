@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, School, CheckCircle2, XCircle, ClipboardPlus, UserPlus, FileBarChart } from 'lucide-react'
 import api from '../Services/api'
+import { useAuth } from '../context/AuthContext'
 
 const AdminDashboard = () => {
 
-    const [user, setUser] = useState(null)
+    const { user } = useAuth()
     const [students, setStudents] = useState([])
     const [classes, setClasses] = useState([])
     const [attendance, setAttendance] = useState([])
@@ -13,17 +14,6 @@ const AdminDashboard = () => {
     const [error, setError] = useState('')
 
     useEffect(() => {
-
-        const fetchUser = async () => {
-            try {
-                const response = await api.get('/users/me')
-                setUser(response.data)
-            }
-            catch (error) {
-                console.log(error)
-                setError('Unable to load user information')
-            }
-        }
 
         const fetchStudents = async () => {
             try {
@@ -76,7 +66,6 @@ const AdminDashboard = () => {
             }
         }
 
-        fetchUser()
         fetchStudents()
         fetchClasses()
         fetchAttendance()

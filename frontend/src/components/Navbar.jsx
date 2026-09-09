@@ -1,33 +1,8 @@
-import { useEffect, useState } from "react"
 import { Search, Bell } from "lucide-react"
-import api from '../Services/api'
+import { useAuth } from '../context/AuthContext'
 
 function Navbar() {
-
-    const [user, setUser] = useState(null)
-    const [error, setError] = useState('')
-
-    useEffect(() => {
-
-        const fetchUser = async () => {
-
-            try {
-                const response = await api.get('/users/me')
-                setUser(response.data)
-            }
-
-            catch (error) {
-                console.log(error)
-                setError('unable to get user information')
-            }
-        }
-
-        fetchUser()
-    }, [])
-
-    if (error) {
-        console.log(error)
-    }
+    const { user } = useAuth()
 
     const initial = user?.name ? user.name.charAt(0).toUpperCase() : 'A'
 

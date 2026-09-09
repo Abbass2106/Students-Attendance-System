@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import api from '../Services/api'
+import { useAuth, ROLES } from '../context/AuthContext'
 
 function Classes() {
+    const { role } = useAuth()
+    // Per the system design, Admin owns academic structure (departments,
+    // programs, courses, classes). Teachers are assigned to classes and
+    // work with attendance, but shouldn't create/edit/delete classes.
+    // The backend currently allows TEACHER to hit these endpoints too, so
+    // this is enforced here on the frontend only.
+    const canManageClasses = role === ROLES.ADMIN
     const [classes, setClasses] = useState([])
     const [className, setClassName] = useState('')
     const [error, setError] = useState('')
@@ -136,12 +144,14 @@ function Classes() {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleAdd}
-                    className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
-                >
-                    + Add Class
-                </button>
+                {canManageClasses && (
+                    <button
+                        onClick={handleAdd}
+                        className="rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                        + Add Class
+                    </button>
+                )}
 
             </div>
 
@@ -153,7 +163,7 @@ function Classes() {
             )}
 
             {/* Add / Edit Form */}
-            {showForm && (
+            {showForm && canManageClasses && (
                 <div className="mb-6 rounded-xl bg-white p-6 shadow-sm">
 
                     <h2 className="mb-4 font-semibold text-gray-800">
@@ -223,23 +233,25 @@ function Classes() {
                             {schoolClass.students?.length || 0} students
                         </p>
 
-                        <div className="mt-5 flex gap-2">
+                        {canManageClasses && (
+                            <div className="mt-5 flex gap-2">
 
-                            <button
-                                onClick={() => handleEdit(schoolClass)}
-                                className="flex-1 rounded-lg border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                            >
-                                Edit
-                            </button>
+                                <button
+                                    onClick={() => handleEdit(schoolClass)}
+                                    className="flex-1 rounded-lg border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Edit
+                                </button>
 
-                            <button
-                                onClick={() => handleDelete(schoolClass.id)}
-                                className="flex-1 rounded-lg bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-                            >
-                                Delete
-                            </button>
+                                <button
+                                    onClick={() => handleDelete(schoolClass.id)}
+                                    className="flex-1 rounded-lg bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                                >
+                                    Delete
+                                </button>
 
-                        </div>
+                            </div>
+                        )}
 
                     </div>
 

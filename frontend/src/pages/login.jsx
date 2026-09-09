@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { GraduationCap, Mail, Lock, ArrowRight, AlertCircle, BarChart3, ClipboardCheck, Users } from 'lucide-react'
 import api from '../Services/api'
+import { useAuth } from '../context/AuthContext'
 
 const initialForm = { email: '', password: '' }
 
@@ -16,6 +17,8 @@ const Login = () => {
     }
 
     const navigate = useNavigate()
+    const location = useLocation()
+    const { refreshUser } = useAuth()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -28,7 +31,22 @@ const Login = () => {
                 password: form.password
             })
 
-            navigate('/dashboard')
+            // Login only sets the httpOnly cookie; fetch /users/me to learn
+            // the role so we can send the person to the right place and so
+            // the rest of the app (sidebar, route guards) has it immediately.
+            const me = await refreshUser()
+
+            const redirectTo = location.state?.from?.pathname
+
+            if (redirectTo && redirectTo !== '/login') {
+                navigate(redirectTo, { replace: true })
+            } else {
+                navigate('/dashboard', { replace: true })
+            }
+
+            if (!me) {
+                setError('Signed in, but unable to load your account details.')
+            }
         }
 
         catch (error) {
