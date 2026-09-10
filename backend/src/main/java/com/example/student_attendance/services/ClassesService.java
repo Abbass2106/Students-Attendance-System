@@ -58,6 +58,12 @@ public class ClassesService {
         return classesRepository.findAll();
     }
 
+    // Scoped view for a TEACHER: only classes where they are the assigned
+    // lecturer. lecturerId on Classes stores the User.id of the teacher.
+    public List<Classes> getMyClasses(Long lecturerId) {
+        return classesRepository.findByLecturerId(lecturerId);
+    }
+
     public Classes getClassById(Long id) {
 
         return classesRepository.findById(id)

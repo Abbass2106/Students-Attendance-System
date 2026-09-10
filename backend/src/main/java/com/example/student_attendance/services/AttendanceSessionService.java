@@ -62,6 +62,23 @@ public class AttendanceSessionService {
         return sessionRepository.findAll();
     }
 
+    // Scoped view for a TEACHER: sessions that belong to classes assigned
+    // to them (lecturerId == their User.id).
+    public List<AttendanceSession> getMySessions(Long lecturerId) {
+
+        List<Long> myClassIds = classesRepository
+                .findByLecturerId(lecturerId)
+                .stream()
+                .map(com.example.student_attendance.models.Classes::getId)
+                .toList();
+
+        if (myClassIds.isEmpty()) {
+            return List.of();
+        }
+
+        return sessionRepository.findByClassIdIn(myClassIds);
+    }
+
     public AttendanceSession getSessionById(Long id) {
 
         return sessionRepository.findById(id)

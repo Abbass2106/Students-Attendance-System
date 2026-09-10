@@ -42,8 +42,10 @@ class AttendanceServiceTest {
         AttendanceSession session = new AttendanceSession();
         session.setId(10L);
         session.setDate(date);
+        session.setClassId(1L);
         Enrollment enrollment = new Enrollment();
         enrollment.setId(20L);
+        enrollment.setClassId(1L);
 
         when(sessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(enrollmentRepository.findById(20L)).thenReturn(Optional.of(enrollment));

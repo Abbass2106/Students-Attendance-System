@@ -2,9 +2,12 @@ package com.example.student_attendance.controllers;
 
 import com.example.student_attendance.models.Classes;
 import com.example.student_attendance.models.Enrollment;
+import com.example.student_attendance.models.User;
 import com.example.student_attendance.services.ClassesService;
+import com.example.student_attendance.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,11 +19,14 @@ import java.util.Map;
 public class ClassesController {
 
     private final ClassesService classesService;
+    private final UserService userService;
 
     public ClassesController(
-            ClassesService classesService
+            ClassesService classesService,
+            UserService userService
     ) {
         this.classesService = classesService;
+        this.userService = userService;
     }
 
     @PostMapping
@@ -40,6 +46,22 @@ public class ClassesController {
 
         return ResponseEntity.ok(
                 classesService.getAllClasses()
+        );
+    }
+
+    // Scoped to the logged-in TEACHER: only classes assigned to them.
+    // (Also works for ADMIN, returning whatever classes happen to be
+    // assigned to that admin's user id, which is normally none.)
+    @GetMapping("/mine")
+    public ResponseEntity<List<Classes>> getMyClasses(
+            Authentication authentication
+    ) {
+        User me = userService.getUserByEmail(
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                classesService.getMyClasses(me.getId())
         );
     }
 

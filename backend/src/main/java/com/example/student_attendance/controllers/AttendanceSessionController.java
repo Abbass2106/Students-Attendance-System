@@ -1,9 +1,12 @@
 package com.example.student_attendance.controllers;
 
 import com.example.student_attendance.models.AttendanceSession;
+import com.example.student_attendance.models.User;
 import com.example.student_attendance.services.AttendanceSessionService;
+import com.example.student_attendance.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -14,11 +17,14 @@ import java.util.List;
 public class AttendanceSessionController {
 
     private final AttendanceSessionService sessionService;
+    private final UserService userService;
 
     public AttendanceSessionController(
-            AttendanceSessionService sessionService
+            AttendanceSessionService sessionService,
+            UserService userService
     ) {
         this.sessionService = sessionService;
+        this.userService = userService;
     }
 
     @PostMapping
@@ -40,6 +46,20 @@ public class AttendanceSessionController {
     public ResponseEntity<List<AttendanceSession>> getAllSessions() {
         return ResponseEntity.ok(
                 sessionService.getAllSessions()
+        );
+    }
+
+    // Scoped to the logged-in TEACHER: sessions for classes assigned to them.
+    @GetMapping("/mine")
+    public ResponseEntity<List<AttendanceSession>> getMySessions(
+            Authentication authentication
+    ) {
+        User me = userService.getUserByEmail(
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                sessionService.getMySessions(me.getId())
         );
     }
 

@@ -17,4 +17,7 @@ public interface AttendanceSessionRepository
             Long classId,
             LocalDate date
     );
+
+    // Used to scope a TEACHER's view to sessions belonging to their classes.
+    List<AttendanceSession> findByClassIdIn(List<Long> classIds);
 }

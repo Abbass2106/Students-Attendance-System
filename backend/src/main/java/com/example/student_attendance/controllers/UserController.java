@@ -18,6 +18,7 @@ import com.example.student_attendance.models.LoginRequest;
 import com.example.student_attendance.models.User;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,17 @@ import org.springframework.http.ResponseEntity;
 public class UserController {
 
     private final UserService userService;
+
+    // Whether to mark the login cookie Secure/SameSite=None (needed for a
+    // real HTTPS, cross-site deployment) vs Secure=false/SameSite=Lax
+    // (needed for plain-HTTP local dev). Driven by an explicit property
+    // instead of HttpServletRequest.isSecure(), because isSecure() can
+    // report the wrong thing depending on local proxies/tooling and, if
+    // wrong, causes the browser to silently drop the cookie entirely —
+    // which looks exactly like "every request is unauthenticated" with
+    // no obvious error anywhere.
+    @Value("${app.cookie-secure:false}")
+    private boolean cookieSecure;
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -78,8 +90,8 @@ public class UserController {
         ResponseCookie cookie = ResponseCookie
                 .from("accessToken", token)
                 .httpOnly(true)
-                .secure(httpRequest.isSecure())
-                .sameSite(httpRequest.isSecure() ? "None" : "Lax")
+                .secure(cookieSecure)
+                .sameSite(cookieSecure ? "None" : "Lax")
                 .path("/")
                 .maxAge(60 * 60)
                 .build();
