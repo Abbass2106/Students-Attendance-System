@@ -1,6 +1,7 @@
 package com.example.student_attendance.controllers;
 
 import com.example.student_attendance.models.Classes;
+import com.example.student_attendance.models.Role;
 import com.example.student_attendance.models.Enrollment;
 import com.example.student_attendance.models.User;
 import com.example.student_attendance.services.ClassesService;
@@ -18,181 +19,173 @@ import java.util.Map;
 @RequestMapping("/api/classes")
 public class ClassesController {
 
-    private final ClassesService classesService;
-    private final UserService userService;
+        private final ClassesService classesService;
+        private final UserService userService;
 
-    public ClassesController(
-            ClassesService classesService,
-            UserService userService
-    ) {
-        this.classesService = classesService;
-        this.userService = userService;
-    }
+        public ClassesController(
+                        ClassesService classesService,
+                        UserService userService) {
+                this.classesService = classesService;
+                this.userService = userService;
+        }
 
-    @PostMapping
-    public ResponseEntity<Classes> createClass(
-            @RequestBody Classes classes
-    ) {
+        @PostMapping
+        public ResponseEntity<Classes> createClass(
+                        @RequestBody Classes classes) {
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        classesService.createClass(classes)
-                );
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(
+                                                classesService.createClass(classes));
+        }
 
-    @GetMapping
-    public ResponseEntity<List<Classes>> getAllClasses() {
+        @GetMapping
+        public ResponseEntity<List<Classes>> getAllClasses() {
 
-        return ResponseEntity.ok(
-                classesService.getAllClasses()
-        );
-    }
+                return ResponseEntity.ok(
+                                classesService.getAllClasses());
+        }
 
-    /*
-     * Returns only classes assigned to
-     * the currently logged-in teacher.
-     */
-    @GetMapping("/mine")
-    public ResponseEntity<List<Classes>> getMyClasses(
-            Authentication authentication
-    ) {
+        /*
+         * Returns only classes assigned to
+         * the currently logged-in teacher.
+         */
+        @GetMapping("/mine")
+        public ResponseEntity<List<Classes>> getMyClasses(
+                        Authentication authentication) {
 
-        User me = userService.getUserByEmail(
-                authentication.getName()
-        );
+                User me = userService.getUserByEmail(
+                                authentication.getName());
 
-        return ResponseEntity.ok(
-                classesService.getMyClasses(me.getId())
-        );
-    }
+                return ResponseEntity.ok(
+                                classesService.getMyClasses(me.getId()));
+        }
 
-    /*
-     * ADMIN assigns a teacher to a class.
-     *
-     * Example:
-     *
-     * PUT /api/classes/5/teacher/7
-     *
-     * class 5 -> teacher user 7
-     */
-    @PutMapping("/{classId}/teacher/{teacherId}")
-    public ResponseEntity<Classes> assignTeacher(
-            @PathVariable Long classId,
-            @PathVariable Long teacherId
-    ) {
+        /*
+         * ADMIN assigns a teacher to a class.
+         *
+         * Example:
+         *
+         * PUT /api/classes/5/teacher/7
+         *
+         * class 5 -> teacher user 7
+         */
+        @PutMapping("/{classId}/teacher/{teacherId}")
+        public ResponseEntity<Classes> assignTeacher(
+                        @PathVariable Long classId,
+                        @PathVariable Long teacherId) {
 
-        return ResponseEntity.ok(
-                classesService.assignTeacher(
-                        classId,
-                        teacherId
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                classesService.assignTeacher(
+                                                classId,
+                                                teacherId));
+        }
 
-    /*
-     * ADMIN removes the teacher from a class.
-     *
-     * Example:
-     *
-     * DELETE /api/classes/5/teacher
-     */
-    @DeleteMapping("/{classId}/teacher")
-    public ResponseEntity<Classes> removeTeacher(
-            @PathVariable Long classId
-    ) {
+        /*
+         * ADMIN removes the teacher from a class.
+         *
+         * Example:
+         *
+         * DELETE /api/classes/5/teacher
+         */
+        @DeleteMapping("/{classId}/teacher")
+        public ResponseEntity<Classes> removeTeacher(
+                        @PathVariable Long classId) {
 
-        return ResponseEntity.ok(
-                classesService.removeTeacher(classId)
-        );
-    }
+                return ResponseEntity.ok(
+                                classesService.removeTeacher(classId));
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Classes> getClassById(
-            @PathVariable Long id
-    ) {
+        @GetMapping("/{id}")
+        public ResponseEntity<Classes> getClassById(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                User me = userService.getUserByEmail(
+                                authentication.getName());
 
-        return ResponseEntity.ok(
-                classesService.getClassById(id)
-        );
-    }
+                if (me.getRole() == Role.TEACHER) {
+                        return ResponseEntity.ok(
+                                        classesService.getClassByIdForTeacher(
+                                                        id,
+                                                        me.getId()));
+                }
 
-    @GetMapping("/code/{code}")
-    public ResponseEntity<Classes> getClassByCode(
-            @PathVariable String code
-    ) {
+                return ResponseEntity.ok(
+                                classesService.getClassById(id));
+        }
 
-        return ResponseEntity.ok(
-                classesService.getClassByCode(code)
-        );
-    }
+        @GetMapping("/code/{code}")
+        public ResponseEntity<Classes> getClassByCode(
+                        @PathVariable String code) {
 
-    @GetMapping("/{id}/student-count")
-    public ResponseEntity<Map<String, Object>> getStudentCount(
-            @PathVariable Long id
-    ) {
+                return ResponseEntity.ok(
+                                classesService.getClassByCode(code));
+        }
 
-        Classes classes =
-                classesService.getClassById(id);
+        @GetMapping("/{id}/student-count")
+        public ResponseEntity<Map<String, Object>> getStudentCount(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                User me = userService.getUserByEmail(
+                                authentication.getName());
 
-        long studentCount =
-                classesService.getStudentCount(id);
+                Classes classes;
 
-        Map<String, Object> response =
-                new HashMap<>();
+                if (me.getRole() == Role.TEACHER) {
+                        classes = classesService.getClassByIdForTeacher(
+                                        id,
+                                        me.getId());
+                } else {
+                        classes = classesService.getClassById(id);
+                }
 
-        response.put(
-                "classId",
-                classes.getId()
-        );
+                long studentCount = classesService.getStudentCount(id);
 
-        response.put(
-                "classCode",
-                classes.getCode()
-        );
+                Map<String, Object> response = new HashMap<>();
 
-        response.put(
-                "studentCount",
-                studentCount
-        );
+                response.put("classId", classes.getId());
+                response.put("classCode", classes.getCode());
+                response.put("studentCount", studentCount);
 
-        return ResponseEntity.ok(response);
-    }
+                return ResponseEntity.ok(response);
+        }
 
-    @GetMapping("/{id}/enrollments")
-    public ResponseEntity<List<Enrollment>>
-    getClassEnrollments(
-            @PathVariable Long id
-    ) {
+        @GetMapping("/{id}/enrollments")
+        public ResponseEntity<List<Enrollment>> getClassEnrollments(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                User me = userService.getUserByEmail(
+                                authentication.getName());
 
-        return ResponseEntity.ok(
-                classesService.getEnrollmentsByClass(id)
-        );
-    }
+                if (me.getRole() == Role.TEACHER) {
+                        classesService.getClassByIdForTeacher(
+                                        id,
+                                        me.getId());
+                }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Classes> updateClass(
-            @PathVariable Long id,
-            @RequestBody Classes classes
-    ) {
+                return ResponseEntity.ok(
+                                classesService.getEnrollmentsByClass(id));
+        }
 
-        return ResponseEntity.ok(
-                classesService.updateClass(
-                        id,
-                        classes
-                )
-        );
-    }
+        @PutMapping("/{id}")
+        public ResponseEntity<Classes> updateClass(
+                        @PathVariable Long id,
+                        @RequestBody Classes classes) {
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteClass(
-            @PathVariable Long id
-    ) {
+                return ResponseEntity.ok(
+                                classesService.updateClass(
+                                                id,
+                                                classes));
+        }
 
-        classesService.deleteClass(id);
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteClass(
+                        @PathVariable Long id) {
 
-        return ResponseEntity
-                .noContent()
-                .build();
-    }
+                classesService.deleteClass(id);
+
+                return ResponseEntity
+                                .noContent()
+                                .build();
+        }
 }
