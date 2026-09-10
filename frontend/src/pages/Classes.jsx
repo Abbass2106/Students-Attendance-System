@@ -25,6 +25,8 @@ function Classes() {
     const [form, setForm] = useState(emptyForm)
 
     const [editingId, setEditingId] = useState(null)
+    const [originalLecturerId, setOriginalLecturerId] = useState(null)
+
     const [showForm, setShowForm] = useState(false)
 
     const [loading, setLoading] = useState(true)
@@ -90,6 +92,7 @@ function Classes() {
     const handleAdd = () => {
         setForm(emptyForm)
         setEditingId(null)
+        setOriginalLecturerId(null)
         setError('')
         setShowForm(true)
     }
@@ -107,6 +110,8 @@ function Classes() {
         })
 
         setEditingId(schoolClass.id)
+        setOriginalLecturerId(schoolClass.lecturerId || null)
+
         setError('')
         setShowForm(true)
     }
@@ -114,6 +119,7 @@ function Classes() {
     const handleCancel = () => {
         setForm(emptyForm)
         setEditingId(null)
+        setOriginalLecturerId(null)
         setShowForm(false)
         setError('')
     }
@@ -148,14 +154,20 @@ function Classes() {
 
         setSubmitting(true)
 
+        /*
+         * IMPORTANT:
+         *
+         * lecturerId is intentionally NOT included here.
+         *
+         * Teacher assignment is handled separately through:
+         *
+         * PUT /classes/{classId}/teacher/{teacherId}
+         */
         const payload = {
             code: form.code.trim(),
             courseId: Number(form.courseId),
             semester: Number(form.semester),
             academicYear: form.academicYear.trim(),
-            lecturerId: form.lecturerId
-                ? Number(form.lecturerId)
-                : null,
             room: form.room.trim() || null,
             capacity: form.capacity
                 ? Number(form.capacity)
@@ -164,33 +176,145 @@ function Classes() {
         }
 
         try {
+
+            // ==================================================
+            // EDIT EXISTING CLASS
+            // ==================================================
+
             if (editingId) {
+
+                // ----------------------------------------------
+                // Step 1: Update class information
+                // ----------------------------------------------
+
                 const response = await api.put(
                     `/classes/${editingId}`,
                     payload
                 )
 
+                let updatedClass = response.data
+
+                // ----------------------------------------------
+                // Step 2: Handle teacher assignment separately
+                // ----------------------------------------------
+
+                const selectedTeacherId = form.lecturerId
+                    ? Number(form.lecturerId)
+                    : null
+
+                const previousTeacherId = originalLecturerId
+                    ? Number(originalLecturerId)
+                    : null
+
+                // A new/different teacher was selected
+                if (
+                    selectedTeacherId &&
+                    selectedTeacherId !== previousTeacherId
+                ) {
+                    const teacherResponse = await api.put(
+                        `/classes/${editingId}/teacher/${selectedTeacherId}`
+                    )
+
+                    updatedClass = teacherResponse.data
+                }
+
+                // Existing teacher was removed
+                else if (
+                    !selectedTeacherId &&
+                    previousTeacherId
+                ) {
+                    await api.delete(
+                        `/classes/${editingId}/teacher`
+                    )
+
+                    updatedClass = {
+                        ...updatedClass,
+                        lecturerId: null,
+                    }
+                }
+
+                // ----------------------------------------------
+                // Update frontend state
+                // ----------------------------------------------
+
                 setClasses((previous) =>
                     previous.map((schoolClass) =>
                         schoolClass.id === editingId
-                            ? response.data
+                            ? updatedClass
                             : schoolClass
                     )
                 )
+
+                handleCancel()
             }
+
+            // ==================================================
+            // CREATE NEW CLASS
+            // ==================================================
+
             else {
+
+                // ----------------------------------------------
+                // Step 1: Create class WITHOUT teacher
+                // ----------------------------------------------
+
                 const response = await api.post(
                     '/classes',
                     payload
                 )
 
-                setClasses((previous) => [
-                    ...previous,
-                    response.data,
-                ])
-            }
+                const createdClass = response.data
 
-            handleCancel()
+                // ----------------------------------------------
+                // Step 2: Assign teacher separately
+                // ----------------------------------------------
+
+                if (form.lecturerId) {
+                    try {
+                        const teacherResponse = await api.put(
+                            `/classes/${createdClass.id}/teacher/${form.lecturerId}`
+                        )
+
+                        setClasses((previous) => [
+                            ...previous,
+                            teacherResponse.data,
+                        ])
+
+                        handleCancel()
+                    }
+                    catch (teacherError) {
+                        console.error(teacherError)
+
+                        /*
+                         * The class was created successfully,
+                         * but teacher assignment failed.
+                         */
+
+                        setClasses((previous) => [
+                            ...previous,
+                            createdClass,
+                        ])
+
+                        setForm(emptyForm)
+
+                        setError(
+                            'Class was created, but teacher assignment failed. You can edit the class and assign the teacher again.'
+                        )
+                    }
+                }
+                else {
+                    // ------------------------------------------
+                    // No teacher selected
+                    // ------------------------------------------
+
+                    setClasses((previous) => [
+                        ...previous,
+                        createdClass,
+                    ])
+
+                    handleCancel()
+                }
+            }
         }
         catch (err) {
             console.error(err)
@@ -565,9 +689,11 @@ function Classes() {
                                         Room
                                     </th>
 
-                                    <th className="px-6 py-4">
-                                        Actions
-                                    </th>
+                                    {canManageClasses && (
+                                        <th className="px-6 py-4">
+                                            Actions
+                                        </th>
+                                    )}
                                 </tr>
 
                             </thead>
@@ -617,9 +743,9 @@ function Classes() {
                                             {schoolClass.room || '—'}
                                         </td>
 
-                                        <td className="px-6 py-4">
+                                        {canManageClasses && (
+                                            <td className="px-6 py-4">
 
-                                            {canManageClasses && (
                                                 <div className="flex gap-2">
 
                                                     <button
@@ -645,9 +771,9 @@ function Classes() {
                                                     </button>
 
                                                 </div>
-                                            )}
 
-                                        </td>
+                                            </td>
+                                        )}
 
                                     </tr>
 
