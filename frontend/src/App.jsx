@@ -29,8 +29,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* Every role has a dashboard landing page; Dashboard.jsx picks
-              which one to render based on the logged-in user's role. */}
+          {/* Every role has a dashboard landing page; Dashboard.jsx picks which one to render based on the logged-in user's role. */}
           <Route index element={<Dashboard />} />
 
           {/* Admin + Teacher: class/attendance-level tools */}
@@ -42,6 +41,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="classes"
             element={
@@ -50,6 +50,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="enrollments"
             element={
@@ -66,6 +67,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="reports"
             element={

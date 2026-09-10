@@ -1,13 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-/**
- * Wrap routes that require authentication (and optionally specific roles).
- *
- * <ProtectedRoute><DashboardLayout /></ProtectedRoute>                 -> any logged-in user
- * <ProtectedRoute roles={['ADMIN']}><Users /></ProtectedRoute>         -> ADMIN only
- * <ProtectedRoute roles={['ADMIN','TEACHER']}><Classes /></ProtectedRoute>
- */
+
 function ProtectedRoute({ children, roles }) {
     const { user, loading, isAuthenticated } = useAuth()
     const location = useLocation()
