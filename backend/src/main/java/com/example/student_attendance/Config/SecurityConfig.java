@@ -25,6 +25,7 @@ public class SecurityConfig {
             JwtAuthenticationEntryPoint authenticationEntryPoint,
             JwtAccessDeniedHandler accessDeniedHandler
     ) {
+
         this.jwtAuthenticationFilter =
                 jwtAuthenticationFilter;
 
@@ -64,30 +65,51 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        /*
+                         * LOGIN
+                         */
                         .requestMatchers(
                                 "/api/users/login"
                         ).permitAll()
 
+                        /*
+                         * CURRENT USER
+                         */
                         .requestMatchers(
                                 "/api/users/me"
                         ).authenticated()
 
+                        /*
+                         * USER MANAGEMENT
+                         */
                         .requestMatchers(
                                 "/api/users/**"
                         ).hasRole("ADMIN")
 
+                        /*
+                         * DEPARTMENTS
+                         */
                         .requestMatchers(
                                 "/api/departments/**"
                         ).hasRole("ADMIN")
 
+                        /*
+                         * PROGRAMS
+                         */
                         .requestMatchers(
                                 "/api/programs/**"
                         ).hasRole("ADMIN")
 
+                        /*
+                         * COURSES
+                         */
                         .requestMatchers(
                                 "/api/courses/**"
                         ).hasRole("ADMIN")
 
+                        /*
+                         * STUDENT SELF-SERVICE
+                         */
                         .requestMatchers(
                                 "/api/students/me",
                                 "/api/students/me/**"
@@ -97,10 +119,16 @@ public class SecurityConfig {
                                 "STUDENT"
                         )
 
+                        /*
+                         * STUDENT IMPORT
+                         */
                         .requestMatchers(
                                 "/api/students/import"
                         ).hasRole("ADMIN")
 
+                        /*
+                         * STUDENT MANAGEMENT
+                         */
                         .requestMatchers(
                                 "/api/students/**"
                         ).hasAnyRole(
@@ -108,6 +136,24 @@ public class SecurityConfig {
                                 "TEACHER"
                         )
 
+                        /*
+                         * =================================================
+                         * CLASS TEACHER ASSIGNMENT
+                         * =================================================
+                         *
+                         * Only ADMIN can:
+                         *
+                         * PUT    /api/classes/{classId}/teacher/{teacherId}
+                         * DELETE /api/classes/{classId}/teacher
+                         */
+                        .requestMatchers(
+                                "/api/classes/*/teacher/*",
+                                "/api/classes/*/teacher"
+                        ).hasRole("ADMIN")
+
+                        /*
+                         * OTHER CLASS OPERATIONS
+                         */
                         .requestMatchers(
                                 "/api/classes/**"
                         ).hasAnyRole(
@@ -115,6 +161,9 @@ public class SecurityConfig {
                                 "TEACHER"
                         )
 
+                        /*
+                         * ENROLLMENTS
+                         */
                         .requestMatchers(
                                 "/api/enrollments/**"
                         ).hasAnyRole(
@@ -122,6 +171,9 @@ public class SecurityConfig {
                                 "TEACHER"
                         )
 
+                        /*
+                         * ATTENDANCE SESSIONS
+                         */
                         .requestMatchers(
                                 "/api/attendance-sessions/**"
                         ).hasAnyRole(
@@ -129,6 +181,9 @@ public class SecurityConfig {
                                 "TEACHER"
                         )
 
+                        /*
+                         * ATTENDANCE
+                         */
                         .requestMatchers(
                                 "/api/attendance/**"
                         ).hasAnyRole(
@@ -136,6 +191,9 @@ public class SecurityConfig {
                                 "TEACHER"
                         )
 
+                        /*
+                         * EVERYTHING ELSE
+                         */
                         .anyRequest().authenticated()
                 )
 

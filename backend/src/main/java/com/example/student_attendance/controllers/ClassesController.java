@@ -49,19 +49,61 @@ public class ClassesController {
         );
     }
 
-    // Scoped to the logged-in TEACHER: only classes assigned to them.
-    // (Also works for ADMIN, returning whatever classes happen to be
-    // assigned to that admin's user id, which is normally none.)
+    /*
+     * Returns only classes assigned to
+     * the currently logged-in teacher.
+     */
     @GetMapping("/mine")
     public ResponseEntity<List<Classes>> getMyClasses(
             Authentication authentication
     ) {
+
         User me = userService.getUserByEmail(
                 authentication.getName()
         );
 
         return ResponseEntity.ok(
                 classesService.getMyClasses(me.getId())
+        );
+    }
+
+    /*
+     * ADMIN assigns a teacher to a class.
+     *
+     * Example:
+     *
+     * PUT /api/classes/5/teacher/7
+     *
+     * class 5 -> teacher user 7
+     */
+    @PutMapping("/{classId}/teacher/{teacherId}")
+    public ResponseEntity<Classes> assignTeacher(
+            @PathVariable Long classId,
+            @PathVariable Long teacherId
+    ) {
+
+        return ResponseEntity.ok(
+                classesService.assignTeacher(
+                        classId,
+                        teacherId
+                )
+        );
+    }
+
+    /*
+     * ADMIN removes the teacher from a class.
+     *
+     * Example:
+     *
+     * DELETE /api/classes/5/teacher
+     */
+    @DeleteMapping("/{classId}/teacher")
+    public ResponseEntity<Classes> removeTeacher(
+            @PathVariable Long classId
+    ) {
+
+        return ResponseEntity.ok(
+                classesService.removeTeacher(classId)
         );
     }
 
@@ -99,9 +141,20 @@ public class ClassesController {
         Map<String, Object> response =
                 new HashMap<>();
 
-        response.put("classId", classes.getId());
-        response.put("classCode", classes.getCode());
-        response.put("studentCount", studentCount);
+        response.put(
+                "classId",
+                classes.getId()
+        );
+
+        response.put(
+                "classCode",
+                classes.getCode()
+        );
+
+        response.put(
+                "studentCount",
+                studentCount
+        );
 
         return ResponseEntity.ok(response);
     }
@@ -138,6 +191,8 @@ public class ClassesController {
 
         classesService.deleteClass(id);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }
