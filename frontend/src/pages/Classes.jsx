@@ -43,31 +43,41 @@ function Classes() {
         setError('')
 
         try {
-            const [classesResponse, coursesResponse, usersResponse] =
-                await Promise.all([
-                    api.get('/classes'),
-                    api.get('/courses'),
-                    api.get('/users'),
-                ])
+            if (role === ROLES.ADMIN) {
+                const [classesResponse, coursesResponse, usersResponse] =
+                    await Promise.all([
+                        api.get('/classes'),
+                        api.get('/courses'),
+                        api.get('/users'),
+                    ])
 
-            setClasses(classesResponse.data)
-            setCourses(coursesResponse.data)
+                setClasses(classesResponse.data)
+                setCourses(coursesResponse.data)
 
-            const teacherUsers = usersResponse.data.filter(
-                (user) => user.role === ROLES.TEACHER
-            )
+                const teacherUsers = usersResponse.data.filter(
+                    (user) => user.role === ROLES.TEACHER
+                )
 
-            setTeachers(teacherUsers)
-        }
-        catch (err) {
+                setTeachers(teacherUsers)
+            }
+
+            if (role === ROLES.TEACHER) {
+                const classesResponse = await api.get('/classes/mine')
+
+                setClasses(classesResponse.data)
+
+                // Teacher doesn't need these for management
+                setCourses([])
+                setTeachers([])
+            }
+        } catch (err) {
             console.error(err)
 
             setError(
                 err.response?.data?.message ||
                 'Unable to load class data'
             )
-        }
-        finally {
+        } finally {
             setLoading(false)
         }
     }
