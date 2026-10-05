@@ -1,12 +1,63 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search, Plus, Pencil, Trash2, GraduationCap, Upload, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import api from '../Services/api'
+import { useAuth, ROLES } from '../context/AuthContext'
+
+const emptyForm = {
+    studentNumber: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    programId: '',
+    year: '',
+    semester: '',
+    status: 'ACTIVE',
+}
+
+// [name, label, type, placeholder, required]
+const FIELDS = [
+    ['studentNumber', 'Student number', 'text', 'e.g. STU-001', true],
+    ['email', 'Email', 'email', 'jane@school.edu', true],
+    ['firstName', 'First name', 'text', 'Jane', true],
+    ['lastName', 'Last name', 'text', 'Doe', true],
+    ['phone', 'Phone', 'text', 'Optional', false],
+    ['year', 'Year', 'number', 'e.g. 2', false],
+    ['semester', 'Semester', 'number', 'e.g. 1', false],
+]
+
+const inputClass =
+    'w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100'
+
+// Backend returns { message } for business errors and { field: msg } for validation errors.
+const errorMessage = (err, fallback) => {
+    const data = err.response?.data
+    if (!err.response) return 'Unable to connect with server'
+    if (data?.message) return data.message
+    if (data && typeof data === 'object') {
+        const text = Object.values(data).join(', ')
+        if (text) return text
+    }
+    return fallback
+}
 
 function Students() {
+    const { role } = useAuth()
+    const canManage = role === ROLES.ADMIN
+
     const [search, setSearch] = useState('')
     const [students, setStudents] = useState([])
-    const [error, setError] = useState([])
+    const [programs, setPrograms] = useState([])
+    const [error, setError] = useState('')
 
+    // add / edit
+    const [showForm, setShowForm] = useState(false)
+    const [editingId, setEditingId] = useState(null)
+    const [form, setForm] = useState(emptyForm)
+    const [formError, setFormError] = useState('')
+    const [submitting, setSubmitting] = useState(false)
+
+    // import
     const [showImport, setShowImport] = useState(false)
     const [importFile, setImportFile] = useState(null)
     const [importing, setImporting] = useState(false)
@@ -19,19 +70,114 @@ function Students() {
             const response = await api.get('/students')
             setStudents(response.data)
         }
-
-        catch (error) {
-            console.log('Unable to fetch students')
-
-            if (error.response) {
-                setError(error.response.data?.message)
-            }
+        catch (err) {
+            console.error(err)
+            setError(errorMessage(err, 'Unable to load students'))
         }
     }
 
     useEffect(() => {
         fetchStudents()
-    }, [])
+
+        // Programs are admin-only on the backend; teachers just don't get the column.
+        if (canManage) {
+            api.get('/programs')
+                .then((res) => setPrograms(res.data))
+                .catch((err) => console.error(err))
+        }
+    }, [canManage])
+
+    const programName = (id) => programs.find((p) => p.id === id)?.code || '—'
+
+    // ---------- add / edit ----------
+
+    const openAdd = () => {
+        setEditingId(null)
+        setForm(emptyForm)
+        setFormError('')
+        setShowForm(true)
+    }
+
+    const openEdit = (student) => {
+        setEditingId(student.id)
+        setForm({
+            studentNumber: student.studentNumber || '',
+            firstName: student.firstName || '',
+            lastName: student.lastName || '',
+            email: student.email || '',
+            phone: student.phone || '',
+            programId: student.programId || '',
+            year: student.year ?? '',
+            semester: student.semester ?? '',
+            status: student.status || 'ACTIVE',
+        })
+        setFormError('')
+        setShowForm(true)
+    }
+
+    const closeForm = () => {
+        setShowForm(false)
+        setFormError('')
+    }
+
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        setForm((prev) => ({ ...prev, [name]: value }))
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setFormError('')
+        setSubmitting(true)
+
+        const payload = {
+            studentNumber: form.studentNumber.trim(),
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim() || null,
+            programId: form.programId ? Number(form.programId) : null,
+            year: form.year !== '' ? Number(form.year) : null,
+            semester: form.semester !== '' ? Number(form.semester) : null,
+            status: form.status,
+        }
+
+        try {
+            if (editingId) {
+                const response = await api.put(`/students/${editingId}`, payload)
+                setStudents((prev) => prev.map((s) => (s.id === editingId ? response.data : s)))
+            } else {
+                const response = await api.post('/students', payload)
+                setStudents((prev) => [...prev, response.data])
+            }
+
+            closeForm()
+        }
+        catch (err) {
+            console.error(err)
+            setFormError(errorMessage(err, 'Unable to save student'))
+        }
+        finally {
+            setSubmitting(false)
+        }
+    }
+
+    const handleDelete = async (student) => {
+        if (!confirm(`Delete ${student.firstName} ${student.lastName}?`)) return
+
+        setError('')
+
+        try {
+            await api.delete(`/students/${student.id}`)
+            setStudents((prev) => prev.filter((s) => s.id !== student.id))
+        }
+        catch (err) {
+            console.error(err)
+            setError(errorMessage(err, 'Unable to delete student'))
+        }
+    }
+
+    // ---------- import ----------
 
     const openImport = () => {
         setImportFile(null)
@@ -61,18 +207,14 @@ function Students() {
         formData.append('file', importFile)
 
         try {
-            // Don't set Content-Type manually here — the browser needs to
-            // add its own multipart boundary, which a hardcoded header
-            // would clobber.
+            // Don't set Content-Type manually: the browser has to add the multipart boundary.
             const response = await api.post('/students/import', formData)
 
             setImportSummary(response.data)
             fetchStudents()
         }
-        catch (error) {
-            setImportError(
-                error.response?.data?.message || 'Unable to import students.'
-            )
+        catch (err) {
+            setImportError(errorMessage(err, 'Unable to import students.'))
         }
         finally {
             setImporting(false)
@@ -80,44 +222,51 @@ function Students() {
     }
 
     const searchStudents = students.filter((student) =>
-        `${student.firstName} ${student.lastName}`.toLowerCase().includes(search.toLowerCase())
+        `${student.firstName} ${student.lastName} ${student.studentNumber} ${student.email}`
+            .toLowerCase()
+            .includes(search.toLowerCase())
     )
 
     const initials = (student) =>
         `${student?.firstName?.charAt(0) || ''}${student?.lastName?.charAt(0) || ''}`.toUpperCase()
+
+    const colCount = canManage ? 5 : 3
 
     return (
         <div className="p-6">
 
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Students
-                    </h1>
-
+                    <h1 className="text-2xl font-bold text-gray-800">Students</h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        Manage all students in the school.
+                        {canManage ? 'Manage all students in the school.' : 'View students in the school.'}
                     </p>
                 </div>
 
-                <div className="flex gap-3">
-                    <button
-                        onClick={openImport}
-                        className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-                    >
-                        <Upload size={16} />
-                        Import CSV
-                    </button>
+                {canManage && (
+                    <div className="flex gap-3">
+                        <button
+                            onClick={openImport}
+                            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
+                        >
+                            <Upload size={16} />
+                            Import CSV
+                        </button>
 
-                    <button className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:from-emerald-700 hover:to-green-950">
-                        <Plus size={16} />
-                        Add Student
-                    </button>
-                </div>
+                        <button
+                            onClick={openAdd}
+                            className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:from-emerald-700 hover:to-green-950"
+                        >
+                            <Plus size={16} />
+                            Add Student
+                        </button>
+                    </div>
+                )}
             </div>
 
             {error && (
-                <div className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="mb-5 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle size={16} className="shrink-0" />
                     {error}
                 </div>
             )}
@@ -127,7 +276,7 @@ function Students() {
                     <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search students..."
+                        placeholder="Search by name, number or email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full rounded-lg border border-gray-300 py-3 pl-11 pr-4 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
@@ -141,8 +290,10 @@ function Students() {
                         <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                             <tr>
                                 <th className="px-6 py-4">Name</th>
+                                <th className="px-6 py-4">Student No.</th>
                                 <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4">Actions</th>
+                                {canManage && <th className="px-6 py-4">Program</th>}
+                                {canManage && <th className="px-6 py-4">Actions</th>}
                             </tr>
                         </thead>
 
@@ -154,35 +305,53 @@ function Students() {
                                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-600">
                                                 {initials(student)}
                                             </div>
-                                            <span className="font-medium text-gray-800">
-                                                {student?.firstName}{' '}{student?.lastName}
-                                            </span>
+                                            <div>
+                                                <span className="font-medium text-gray-800">
+                                                    {student?.firstName} {student?.lastName}
+                                                </span>
+                                                {student.status !== 'ACTIVE' && (
+                                                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                                                        {student.status}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
 
-                                    <td className="px-6 py-4 text-gray-500">
-                                        {student?.email}
-                                    </td>
+                                    <td className="px-6 py-4 text-gray-500">{student?.studentNumber}</td>
+                                    <td className="px-6 py-4 text-gray-500">{student?.email}</td>
 
-                                    <td className="px-6 py-4">
-                                        <div className="flex gap-2">
-                                            <button className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50">
-                                                <Pencil size={13} />
-                                                Edit
-                                            </button>
+                                    {canManage && (
+                                        <td className="px-6 py-4 text-gray-500">{programName(student.programId)}</td>
+                                    )}
 
-                                            <button className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100">
-                                                <Trash2 size={13} />
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
+                                    {canManage && (
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => openEdit(student)}
+                                                    className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                                                >
+                                                    <Pencil size={13} />
+                                                    Edit
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleDelete(student)}
+                                                    className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                                                >
+                                                    <Trash2 size={13} />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
 
                             {searchStudents.length === 0 && (
                                 <tr>
-                                    <td colSpan="3" className="px-6 py-16 text-center">
+                                    <td colSpan={colCount} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-2 text-gray-400">
                                             <GraduationCap size={28} />
                                             <p className="text-sm text-gray-500">
@@ -197,11 +366,93 @@ function Students() {
                 </div>
             </div>
 
+            {/* Add / edit modal */}
+            {showForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+
+                        <div className="mb-5 flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-800">
+                                {editingId ? 'Edit student' : 'Add student'}
+                            </h2>
+                            <button
+                                onClick={closeForm}
+                                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+
+                            {FIELDS.map(([name, label, type, placeholder, required]) => (
+                                <div key={name}>
+                                    <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+                                    <input
+                                        type={type}
+                                        name={name}
+                                        value={form[name]}
+                                        onChange={handleChange}
+                                        placeholder={placeholder}
+                                        required={required}
+                                        min={type === 'number' ? 1 : undefined}
+                                        className={inputClass}
+                                    />
+                                </div>
+                            ))}
+
+                            <div>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700">Program</label>
+                                <select name="programId" value={form.programId} onChange={handleChange} className={inputClass}>
+                                    <option value="">No program</option>
+                                    {programs.map((p) => (
+                                        <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700">Status</label>
+                                <select name="status" value={form.status} onChange={handleChange} className={inputClass}>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                </select>
+                            </div>
+
+                            {formError && (
+                                <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 sm:col-span-2">
+                                    <AlertCircle size={16} className="shrink-0" />
+                                    {formError}
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 pt-2 sm:col-span-2">
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                                >
+                                    {submitting ? 'Saving...' : editingId ? 'Save changes' : 'Create student'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeForm}
+                                    className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Import modal */}
             {showImport && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
                     <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
                         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-                            <h2 className="font-semibold text-gray-800">Import Students from CSV</h2>
+                            <h2 className="font-semibold text-gray-800">Import students from CSV</h2>
                             <button onClick={closeImport} className="text-gray-400 hover:text-gray-600">
                                 <X size={18} />
                             </button>
@@ -212,7 +463,7 @@ function Students() {
                                 Required columns: <code className="text-xs">studentNumber, firstName, lastName, email</code>.
                                 Optional: <code className="text-xs">phone, programId, year, semester, status</code>.
                                 Column order doesn't matter. Rows that fail (duplicates, missing fields, bad
-                                programId) are skipped and reported — the rest still get imported.
+                                programId) are skipped and reported. The rest still get imported.
                             </p>
 
                             <div className="mt-4">

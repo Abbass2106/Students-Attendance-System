@@ -101,12 +101,11 @@ function Enrollments() {
         setSubmitting(true)
 
         try {
-            const response = await api.post('/enrollments', null, {
-                params: {
-                    studentId: studentToEnroll,
-                    classId: selectedClassId,
-                },
+            const response = await api.post('/enrollments', {
+                studentId: Number(studentToEnroll),
+                classId: Number(selectedClassId),
             })
+
 
             setEnrollments((prev) => [...prev, response.data])
             setShowForm(false)
@@ -218,11 +217,10 @@ function Enrollments() {
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <span
-                                                                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                                                    enrollment.status === 'ACTIVE'
-                                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                                        : 'bg-gray-100 text-gray-600'
-                                                                }`}
+                                                                className={`rounded-full px-3 py-1 text-xs font-medium ${enrollment.status === 'ACTIVE'
+                                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                                    : 'bg-gray-100 text-gray-600'
+                                                                    }`}
                                                             >
                                                                 {enrollment.status}
                                                             </span>

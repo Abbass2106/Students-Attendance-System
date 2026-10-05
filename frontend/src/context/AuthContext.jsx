@@ -32,7 +32,15 @@ export function AuthProvider({ children }) {
         fetchUser()
     }, [fetchUser])
 
-    const logout = () => {
+    // The auth cookie is httpOnly, so only the server can clear it. Without this
+    // call, a page refresh after "logout" silently signs the user back in.
+    const logout = async () => {
+        try {
+            await api.post('/users/logout')
+        }
+        catch (error) {
+            console.error(error)
+        }
         setUser(null)
     }
 
