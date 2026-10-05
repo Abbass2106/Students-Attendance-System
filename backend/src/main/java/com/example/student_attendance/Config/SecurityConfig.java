@@ -6,6 +6,7 @@ import com.example.student_attendance.Security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,189 +26,70 @@ public class SecurityConfig {
             JwtAuthenticationEntryPoint authenticationEntryPoint,
             JwtAccessDeniedHandler accessDeniedHandler
     ) {
-
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
-
-        this.authenticationEntryPoint =
-                authenticationEntryPoint;
-
-        this.accessDeniedHandler =
-                accessDeniedHandler;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
-    ) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-
                 .cors(cors -> {
                 })
-
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
-                )
-
-                .exceptionHandling(exception ->
-                        exception
-                                .authenticationEntryPoint(
-                                        authenticationEntryPoint
-                                )
-                                .accessDeniedHandler(
-                                        accessDeniedHandler
-                                )
-                )
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
 
                 .authorizeHttpRequests(auth -> auth
 
-                        /*
-                         * LOGIN
-                         */
-                        .requestMatchers(
-                                "/api/users/login"
-                        ).permitAll()
+                        // ---- Public ----
+                        .requestMatchers("/api/users/login", "/api/users/logout").permitAll()
+                        .requestMatchers("/error").permitAll()
 
-                        /*
-                         * CURRENT USER
-                         */
-                        .requestMatchers(
-                                "/api/users/me"
-                        ).authenticated()
+                        // ---- Current user ----
+                        .requestMatchers("/api/users/me").authenticated()
 
-                        /*
-                         * USER MANAGEMENT
-                         */
-                        .requestMatchers(
-                                "/api/users/**"
-                        ).hasRole("ADMIN")
+                        // ---- Admin-only structure & users ----
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/departments/**").hasRole("ADMIN")
+                        .requestMatchers("/api/programs/**").hasRole("ADMIN")
 
-                        /*
-                         * DEPARTMENTS
-                         */
-                        .requestMatchers(
-                                "/api/departments/**"
-                        ).hasRole("ADMIN")
+                        // Courses: teachers may READ (to show course names), only admin writes
+                        .requestMatchers(HttpMethod.GET, "/api/courses/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/courses/**").hasRole("ADMIN")
 
-                        /*
-                         * PROGRAMS
-                         */
-                        .requestMatchers(
-                                "/api/programs/**"
-                        ).hasRole("ADMIN")
+                        // ---- Students ----
+                        .requestMatchers("/api/students/me", "/api/students/me/**")
+                                .hasAnyRole("ADMIN", "TEACHER", "STUDENT")
+                        .requestMatchers("/api/students/import").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/students/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/students/**").hasRole("ADMIN") // create / update / delete
 
-                        /*
-                         * COURSES
-                         */
-                        .requestMatchers(
-                                "/api/courses/**"
-                        ).hasRole("ADMIN")
+                        // ---- Classes ----
+                        .requestMatchers("/api/classes/*/teacher/*", "/api/classes/*/teacher").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/classes/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/classes/**").hasRole("ADMIN") // create / update / delete
 
-                        /*
-                         * STUDENT SELF-SERVICE
-                         */
-                        .requestMatchers(
-                                "/api/students/me",
-                                "/api/students/me/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER",
-                                "STUDENT"
-                        )
+                        // ---- Enrollments (teacher access is ownership-checked in the service) ----
+                        .requestMatchers("/api/enrollments/**").hasAnyRole("ADMIN", "TEACHER")
 
-                        /*
-                         * STUDENT IMPORT
-                         */
-                        .requestMatchers(
-                                "/api/students/import"
-                        ).hasRole("ADMIN")
+                        // ---- Attendance (teacher access is ownership-checked in the service) ----
+                        .requestMatchers("/api/attendance-sessions/**").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/attendance/**").hasAnyRole("ADMIN", "TEACHER")
 
-                        /*
-                         * STUDENT MANAGEMENT
-                         */
-                        .requestMatchers(
-                                "/api/students/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
-
-                        /*
-                         * =================================================
-                         * CLASS TEACHER ASSIGNMENT
-                         * =================================================
-                         *
-                         * Only ADMIN can:
-                         *
-                         * PUT    /api/classes/{classId}/teacher/{teacherId}
-                         * DELETE /api/classes/{classId}/teacher
-                         */
-                        .requestMatchers(
-                                "/api/classes/*/teacher/*",
-                                "/api/classes/*/teacher"
-                        ).hasRole("ADMIN")
-
-                        /*
-                         * OTHER CLASS OPERATIONS
-                         */
-                        .requestMatchers(
-                                "/api/classes/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
-
-                        /*
-                         * ENROLLMENTS
-                         */
-                        .requestMatchers(
-                                "/api/enrollments/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
-
-                        /*
-                         * ATTENDANCE SESSIONS
-                         */
-                        .requestMatchers(
-                                "/api/attendance-sessions/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
-
-                        /*
-                         * ATTENDANCE
-                         */
-                        .requestMatchers(
-                                "/api/attendance/**"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "TEACHER"
-                        )
-
-                        /*
-                         * EVERYTHING ELSE
-                         */
                         .anyRequest().authenticated()
                 )
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 }

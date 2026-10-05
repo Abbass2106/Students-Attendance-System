@@ -1,7 +1,9 @@
 package com.example.student_attendance.services;
 
 import com.example.student_attendance.Exceptions.ApiException;
+import com.example.student_attendance.models.Role;
 import com.example.student_attendance.models.User;
+import com.example.student_attendance.repositories.ClassesRepository;
 import com.example.student_attendance.repositories.UserRepository;
 import java.util.List;
 
@@ -14,14 +16,20 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ClassesRepository classesRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            ClassesRepository classesRepository
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.classesRepository = classesRepository;
     }
 
-    // create user
     public User createUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new ApiException("User already exists", 409);
@@ -31,43 +39,47 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // get all users
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    // get user by id
     public User getUserById(Long id) {
-        User existUser = userRepository.findById(id).orElse(null);
-
-        if (existUser == null) {
-            throw new ApiException("User not found", 404);
-        }
-
-        return existUser;
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ApiException("User not found", 404));
     }
 
-    // get user by email
     public User getUserByEmail(String email) {
-        User existUser = userRepository.findByEmail(email).orElse(null);
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException("User not found", 404));
+    }
 
-        if (existUser == null) {
-            throw new ApiException("User not found", 404);
+    // NEW
+    public void deleteUser(Long id, Long currentUserId) {
+
+        if (id.equals(currentUserId)) {
+            throw new ApiException("You cannot delete your own account", 400);
         }
 
-        return existUser;
+        User user = getUserById(id);
+
+        if (user.getRole() == Role.TEACHER
+                && !classesRepository.findByLecturerId(id).isEmpty()) {
+            throw new ApiException(
+                    "This teacher is still assigned to classes. Unassign them first.",
+                    409);
+        }
+
+        userRepository.delete(user);
     }
 
     public String login(String email, String password) {
 
         User user = userRepository.findByEmail(email).orElse(null);
 
-        if (user == null) {
-            throw new ApiException("User not found", 404);
-        }
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new ApiException("Wrong password", 401);
+        // Same message for "no such user" and "wrong password" so the
+        // login form can't be used to discover which emails exist.
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new ApiException("Invalid email or password", 401);
         }
 
         return jwtService.generateToken(

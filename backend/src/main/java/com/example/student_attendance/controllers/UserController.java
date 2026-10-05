@@ -1,5 +1,6 @@
 package com.example.student_attendance.controllers;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.security.core.Authentication;
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.example.student_attendance.services.UserService;
 
@@ -29,14 +29,8 @@ public class UserController {
 
     private final UserService userService;
 
-    // Whether to mark the login cookie Secure/SameSite=None (needed for a
-    // real HTTPS, cross-site deployment) vs Secure=false/SameSite=Lax
-    // (needed for plain-HTTP local dev). Driven by an explicit property
-    // instead of HttpServletRequest.isSecure(), because isSecure() can
-    // report the wrong thing depending on local proxies/tooling and, if
-    // wrong, causes the browser to silently drop the cookie entirely —
-    // which looks exactly like "every request is unauthenticated" with
-    // no obvious error anywhere.
+    // Secure/SameSite=None for real HTTPS cross-site deployments,
+    // Secure=false/SameSite=Lax for plain-HTTP local dev.
     @Value("${app.cookie-secure:false}")
     private boolean cookieSecure;
 
@@ -44,57 +38,57 @@ public class UserController {
         this.userService = userService;
     }
 
-    // create user api
+    private ResponseCookie.ResponseCookieBuilder baseCookie(String value) {
+        return ResponseCookie
+                .from("accessToken", value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSecure ? "None" : "Lax")
+                .path("/");
+    }
+
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
         return userService.createUser(user);
     }
 
-    // get all users api
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // get user by id api
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
-    // get user by email
     @GetMapping("/email/{email}")
     public User getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email);
     }
 
-    // get currently logged-in user
     @GetMapping("/me")
     public User getCurrentUser(Authentication authentication) {
+        return userService.getUserByEmail(authentication.getName());
+    }
 
-        String email = authentication.getName();
-
-        return userService.getUserByEmail(email);
+    // NEW: admin deletes a user (cannot delete self, or a teacher who still has classes)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User me = userService.getUserByEmail(authentication.getName());
+        userService.deleteUser(id, me.getId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/login")
-        public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletRequest httpRequest
-        ) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
 
-        String token = userService.login(
-                request.getEmail(),
-                request.getPassword());
+        String token = userService.login(request.getEmail(), request.getPassword());
 
-        ResponseCookie cookie = ResponseCookie
-                .from("accessToken", token)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite(cookieSecure ? "None" : "Lax")
-                .path("/")
-                .maxAge(60 * 60)
-                .build();
+        ResponseCookie cookie = baseCookie(token).maxAge(60 * 60).build();
 
         return ResponseEntity
                 .ok()
@@ -102,4 +96,15 @@ public class UserController {
                 .body("Login successful");
     }
 
+    // NEW: the auth cookie is httpOnly, so only the server can clear it.
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+
+        ResponseCookie cookie = baseCookie("").maxAge(0).build();
+
+        return ResponseEntity
+                .ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body("Logged out");
+    }
 }

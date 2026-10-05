@@ -4,6 +4,7 @@ import com.example.student_attendance.models.Attendance;
 import com.example.student_attendance.models.AttendanceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,7 +13,11 @@ public interface AttendanceRepository
 
     List<Attendance> findBySessionId(Long sessionId);
 
+    List<Attendance> findBySessionIdIn(Collection<Long> sessionIds);
+
     List<Attendance> findByEnrollmentId(Long enrollmentId);
+
+    List<Attendance> findTop50ByOrderByMarkedAtDesc();
 
     Optional<Attendance> findBySessionIdAndEnrollmentId(
             Long sessionId,

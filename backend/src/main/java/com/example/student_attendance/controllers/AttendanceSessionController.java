@@ -1,8 +1,10 @@
 package com.example.student_attendance.controllers;
 
 import com.example.student_attendance.models.AttendanceSession;
+import com.example.student_attendance.models.Role;
 import com.example.student_attendance.models.User;
 import com.example.student_attendance.services.AttendanceSessionService;
+import com.example.student_attendance.services.ClassesService;
 import com.example.student_attendance.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,96 +20,120 @@ public class AttendanceSessionController {
 
     private final AttendanceSessionService sessionService;
     private final UserService userService;
+    private final ClassesService classesService;
 
     public AttendanceSessionController(
             AttendanceSessionService sessionService,
-            UserService userService
+            UserService userService,
+            ClassesService classesService
     ) {
         this.sessionService = sessionService;
         this.userService = userService;
+        this.classesService = classesService;
+    }
+
+    private User me(Authentication authentication) {
+        return userService.getUserByEmail(authentication.getName());
+    }
+
+    // Throws 403 if a TEACHER is not assigned to the class; no-op for ADMIN.
+    private void checkClassAccess(User me, Long classId) {
+        if (me.getRole() == Role.TEACHER) {
+            classesService.getClassByIdForTeacher(classId, me.getId());
+        }
     }
 
     @PostMapping
     public ResponseEntity<AttendanceSession> createSession(
             @RequestParam Long classId,
-            @RequestBody AttendanceSession session
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        sessionService.createSession(
-                                session,
-                                classId
-                        )
-                );
-    }
-
-    @GetMapping
-    public ResponseEntity<List<AttendanceSession>> getAllSessions() {
-        return ResponseEntity.ok(
-                sessionService.getAllSessions()
-        );
-    }
-
-    // Scoped to the logged-in TEACHER: sessions for classes assigned to them.
-    @GetMapping("/mine")
-    public ResponseEntity<List<AttendanceSession>> getMySessions(
+            @RequestBody AttendanceSession session,
             Authentication authentication
     ) {
-        User me = userService.getUserByEmail(
-                authentication.getName()
-        );
+        User user = me(authentication);
+        checkClassAccess(user, classId);
 
-        return ResponseEntity.ok(
-                sessionService.getMySessions(me.getId())
-        );
+        session.setCreatedBy(user.getId());
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(sessionService.createSession(session, classId));
+    }
+
+    // Admin: every session. Teacher: only sessions for their classes.
+    @GetMapping
+    public ResponseEntity<List<AttendanceSession>> getAllSessions(Authentication authentication) {
+        User user = me(authentication);
+
+        if (user.getRole() == Role.TEACHER) {
+            return ResponseEntity.ok(sessionService.getMySessions(user.getId()));
+        }
+
+        return ResponseEntity.ok(sessionService.getAllSessions());
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<List<AttendanceSession>> getMySessions(Authentication authentication) {
+        return ResponseEntity.ok(sessionService.getMySessions(me(authentication).getId()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AttendanceSession> getSessionById(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                sessionService.getSessionById(id)
-        );
+        AttendanceSession session = sessionService.getSessionById(id);
+        checkClassAccess(me(authentication), session.getClassId());
+
+        return ResponseEntity.ok(session);
     }
 
     @GetMapping("/class/{classId}")
     public ResponseEntity<List<AttendanceSession>> getSessionsByClass(
-            @PathVariable Long classId
+            @PathVariable Long classId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                sessionService.getSessionsByClass(classId)
-        );
+        checkClassAccess(me(authentication), classId);
+
+        return ResponseEntity.ok(sessionService.getSessionsByClass(classId));
     }
 
     @GetMapping("/date/{date}")
     public ResponseEntity<List<AttendanceSession>> getSessionsByDate(
-            @PathVariable LocalDate date
+            @PathVariable LocalDate date,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                sessionService.getSessionsByDate(date)
-        );
+        User user = me(authentication);
+
+        if (user.getRole() == Role.TEACHER) {
+            return ResponseEntity.ok(
+                    sessionService.getMySessions(user.getId()).stream()
+                            .filter(s -> date.equals(s.getDate()))
+                            .toList()
+            );
+        }
+
+        return ResponseEntity.ok(sessionService.getSessionsByDate(date));
     }
 
     @GetMapping("/class/{classId}/date/{date}")
-    public ResponseEntity<List<AttendanceSession>>
-    getSessionsByClassAndDate(
+    public ResponseEntity<List<AttendanceSession>> getSessionsByClassAndDate(
             @PathVariable Long classId,
-            @PathVariable LocalDate date
+            @PathVariable LocalDate date,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                sessionService.getSessionsByClassAndDate(
-                        classId,
-                        date
-                )
-        );
+        checkClassAccess(me(authentication), classId);
+
+        return ResponseEntity.ok(sessionService.getSessionsByClassAndDate(classId, date));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSession(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
+        AttendanceSession session = sessionService.getSessionById(id);
+        checkClassAccess(me(authentication), session.getClassId());
+
         sessionService.deleteSession(id);
 
         return ResponseEntity.noContent().build();
