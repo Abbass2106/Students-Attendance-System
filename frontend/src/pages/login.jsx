@@ -129,7 +129,7 @@ const Login = () => {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-900 text-white">
                             <GraduationCap size={20} />
                         </div>
-                        <span className="text-lg font-bold text-gray-800">AttendEase</span>
+                        <span className="text-lg font-bold text-gray-800">RollBook</span>
                     </div>
 
                     <h1 className="text-2xl font-bold text-gray-900">
