@@ -139,11 +139,7 @@ const Login = () => {
                         Sign in to your account to continue
                     </p>
 
-                    <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-gray-700">
-                        <p className="mb-2 font-semibold text-emerald-800">Demo account</p>
-                        <p>Email: <span className="font-medium">admin@gmail.com</span></p>
-                        <p>Password: <span className="font-medium">admin123</span></p>
-                    </div>
+
 
                     <form onSubmit={handleSubmit} className="mt-8">
 
@@ -210,6 +206,12 @@ const Login = () => {
                         </button>
                     </form>
 
+                </div>
+
+                <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-gray-700">
+                    <p className="mb-2 font-semibold text-emerald-800">Demo account</p>
+                    <p>Email: <span className="font-medium">admin@gmail.com</span></p>
+                    <p>Password: <span className="font-medium">admin123</span></p>
                 </div>
             </div>
 
